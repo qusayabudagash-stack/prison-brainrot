@@ -11,8 +11,20 @@ export type Cosmetic = {
 local CosmeticData = {}
 
 CosmeticData.Cosmetics = {
-	{ id = "Bed", name = "Comfy Bed", emoji = "🛏️", price = 250, description = "Nap between rolls." },
-	{ id = "Toilet", name = "Toilet", emoji = "🚽", price = 500, description = "Every cell needs one." },
+	{
+		id = "Bed",
+		name = "Comfy Bed",
+		emoji = "🛏️",
+		price = 250,
+		description = "Swap the steel bunk for a cozy bed.",
+	},
+	{
+		id = "Toilet",
+		name = "Porcelain Toilet",
+		emoji = "🚽",
+		price = 500,
+		description = "An upgrade from steel. Fancy!",
+	},
 	{
 		id = "Poster",
 		name = "Brainrot Posters",

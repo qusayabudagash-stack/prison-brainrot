@@ -61,7 +61,7 @@ local function refresh(player: Player)
 		local anchor = cell:FindFirstChild(`Display{index}`)
 		if anchor and anchor:IsA("BasePart") and displays then
 			local model = BrainrotModel.build(stack.id, { variant = stack.variant, scale = 0.8 })
-			model:PivotTo(anchor.CFrame * CFrame.Angles(0, math.pi, 0))
+			model:PivotTo(anchor.CFrame)
 			model.Parent = displays
 			local body = model:FindFirstChild("Body")
 			if body and body:IsA("BasePart") then
@@ -78,17 +78,7 @@ local function refresh(player: Player)
 		end
 	end
 
-	local decor = cell:FindFirstChild("Decor")
-	clearChildren(decor)
-	if decor then
-		local origin = cell:GetPivot()
-		local bestId = if best[1] then best[1].id else nil
-		for cosmeticId, shown in data.cosmetics do
-			if shown then
-				CosmeticBuilder.build(cosmeticId, decor, origin, bestId)
-			end
-		end
-	end
+	CosmeticBuilder.apply(cell, data.cosmetics, if best[1] then best[1].id else nil)
 end
 
 -- Batches refreshes. After a roll, waits until the reveal animation is over so the cell doesn't spoil it.
@@ -124,7 +114,7 @@ local function unassign(player: Player)
 		cell:SetAttribute("OwnerId", 0)
 		setOwnerText(cell, "🔓 EMPTY CELL")
 		clearChildren(cell:FindFirstChild("Displays"))
-		clearChildren(cell:FindFirstChild("Decor"))
+		CosmeticBuilder.apply(cell, {})
 	end
 end
 
