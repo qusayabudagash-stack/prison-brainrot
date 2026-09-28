@@ -88,7 +88,10 @@ These need your Roblox account, so they can't be done from code:
    that progress won't be saved. Live servers always save.
 3. **Set the server size to 10** (Game Settings > Places or the place's settings on the Creator
    Dashboard). There are 10 player cells; extra players can still play but won't get a cell.
-4. **Optional: your own sounds.** The game uses sounds built into every Roblox client, pitched per
+4. **Turn on Future lighting** if you use live sync: in the Explorer select Lighting and set
+   **Technology** to **Future**. Rojo sets every other lighting property for you, but its live sync
+   can't change this one (a `rojo build` place file already has it).
+5. **Optional: your own sounds.** The game uses sounds built into every Roblox client, pitched per
    rarity. To use uploaded sounds, paste their asset ids into `src/shared/Modules/SoundData.luau`.
 
 ## How to play
