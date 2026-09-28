@@ -24,6 +24,10 @@ rojo serve
 
 Edits under `src/` now sync into Studio live.
 
+Sync only goes one way, from files into Studio. Edit scripts in your code editor, not in Studio's script editor, because
+Rojo overwrites Studio-side edits to the scripts it manages. Build maps and models in Studio as usual and save the place
+there.
+
 To build a place file without Studio:
 
 ```sh
