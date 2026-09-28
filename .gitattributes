@@ -1,0 +1,6 @@
+# Check out text files with LF endings on every OS, matching `line_endings = "Unix"` in stylua.toml
+* text=auto eol=lf
+
+# Binary Roblox models and places
+*.rbxm binary
+*.rbxl binary
