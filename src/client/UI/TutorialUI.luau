@@ -22,7 +22,7 @@ local STEPS = {
 	{
 		emoji = "💰",
 		title = "STEP 2: Brainrots make you MONEY!",
-		body = "Every Brainrot earns Coins every second - even while you chill.",
+		body = "Every Brainrot earns Coins every second, even while you chill. Your best ones show off in your cell in Cell Block A!",
 		color = C.Gold,
 	},
 	{

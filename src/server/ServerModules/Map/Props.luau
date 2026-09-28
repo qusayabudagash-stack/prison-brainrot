@@ -33,7 +33,8 @@ function Props.ceilingLight(parent: Instance, cframe: CFrame, length: number, co
 	light.Range = 22
 	light.Brightness = 1.4
 	light.Angle = 110
-	light.Shadows = true
+	-- Dozens of these fill the prison; shadows stay on the few spotlights to keep Future lighting cheap
+	light.Shadows = false
 	light.Parent = tube
 end
 
@@ -46,6 +47,28 @@ function Props.pendant(parent: Instance, cframe: CFrame, cable: number, shade: C
 	local bulb = s:ball("Bulb", 0.9, v3(0, -0.25, 0), glow or Palette.LightWarm, M.Neon, false)
 	bulb.CastShadow = false
 	s:spot(bulb, glow or Palette.LightWarm, 30, 2, 70, Enum.NormalId.Bottom)
+end
+
+-- Rooftop air handler: a boxy unit with a fan grille, vents and a duct into the roof.
+function Props.hvac(parent: Instance, cframe: CFrame)
+	local s = Shapes.model(parent, "RoofHVAC", cframe)
+	s:box("RoofUnit", v3(9, 4, 6), CFrame.new(0, 2, 0), Palette.SteelLight, M.Metal)
+	s:deco("RoofUnitBase", v3(9.6, 0.5, 6.6), CFrame.new(0, 0.25, 0), Palette.SteelDark, M.Metal)
+	for _, x in { -2.2, 2.2 } do
+		s:cyl("RoofFan", 0.3, 3.4, CFrame.new(x, 4.15, 0), Palette.SteelDark, M.Metal, false)
+		s:deco("RoofFanGrille", v3(3, 0.1, 0.3), CFrame.new(x, 4.35, 0), Palette.Steel, M.Metal)
+	end
+	for i = 0, 4 do
+		s:deco("RoofVent", v3(0.1, 0.25, 5), CFrame.new(-4.55, 1 + i * 0.6, 0), Palette.SteelDark, M.Metal)
+	end
+	s:box("RoofDuct", v3(2, 2, 5), CFrame.new(0, 1, 5.3), Palette.SteelLight, M.Metal)
+end
+
+-- Rooftop exhaust pipe with a rain cap.
+function Props.roofVent(parent: Instance, cframe: CFrame, height: number)
+	local s = Shapes.model(parent, "RoofVent", cframe)
+	s:cyl("RoofVentPipe", height, 1.2, CFrame.new(0, height / 2, 0), Palette.Steel, M.Metal)
+	s:cyl("RoofVentCap", 0.4, 2.2, CFrame.new(0, height + 0.4, 0), Palette.SteelDark, M.Metal, false)
 end
 
 -- Wall-mounted cage lamp.

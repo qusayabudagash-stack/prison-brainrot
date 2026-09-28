@@ -72,6 +72,9 @@ local function shell(folder: Instance)
 		)
 	end
 	Structure.roof(folder, X1 - 2, BOX.x2 + 2, BOX.z1 - 2, BOX.z2 + 2, Y + h, { beamEvery = 14 })
+	Props.hvac(folder, CFrame.new(80, Y + h + 1.2, 10))
+	Props.roofVent(folder, CFrame.new(60, Y + h + 1.2, 56), 5)
+	Props.roofVent(folder, CFrame.new(64, Y + h + 1.2, 56), 5)
 end
 
 local function servingLine(s: Shapes.Shapes)

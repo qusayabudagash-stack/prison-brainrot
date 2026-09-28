@@ -333,6 +333,14 @@ function Structure.roof(
 			)
 		end
 	end
+	-- A dark parapet around the roof edge so the building reads well from the yard
+	local parapet = ceiling:Lerp(Palette.Ink, 0.35)
+	for _, z in { z1 + 0.4, z2 - 0.4 } do
+		s:deco("RoofParapet", v3(x2 - x1, 1.4, 0.8), CFrame.new((x1 + x2) / 2, y + 1.9, z), parapet, M.Concrete)
+	end
+	for _, x in { x1 + 0.4, x2 - 0.4 } do
+		s:deco("RoofParapet", v3(0.8, 1.4, z2 - z1), CFrame.new(x, y + 1.9, (z1 + z2) / 2), parapet, M.Concrete)
+	end
 	local every = opts.beamEvery or 0
 	if every > 0 then
 		local count = math.floor((z2 - z1) / every)

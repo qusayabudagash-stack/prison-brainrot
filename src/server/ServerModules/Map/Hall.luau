@@ -79,6 +79,13 @@ local function shell(folder: Instance)
 		beamEvery = 15,
 		skylights = { { -12, 12, MACHINE_Z - 12, MACHINE_Z + 12 }, { -10, 10, 50, 66 } },
 	})
+	-- Rooftop machinery, seen from the yard
+	for _, z in { -44, 30 } do
+		Props.hvac(folder, CFrame.new(26, Y + h + 1.2, z))
+	end
+	for _, spot in { v3(-28, 0, 8), v3(30, 0, -12), v3(-24, 0, -40) } do
+		Props.roofVent(folder, CFrame.new(spot.X, Y + h + 1.2, spot.Z), 4)
+	end
 end
 
 local function frontDoors(s: Shapes.Shapes)
@@ -296,16 +303,15 @@ local function rollHall(s: Shapes.Shapes)
 			s:world(CFrame.new(x, 0, 1)).Position,
 		}, Palette.Red)
 	end
-	-- Floor spotlights aimed at the machine
+	-- Stage lights on stands, aimed at the machine
 	for _, x in { -18, 18 } do
-		local can = s:deco(
-			"FloorSpot",
-			v3(1.4, 1.2, 1.4),
-			CFrame.new(x, 0.6, MACHINE_Z + 6) * CFrame.Angles(0, 0, math.rad(if x < 0 then -30 else 30)),
-			Palette.SteelDark,
-			M.Metal
-		)
-		s:spot(can, THEME.machine.glow, 26, 2, 40, Enum.NormalId.Top)
+		local base = CFrame.new(x, 0, MACHINE_Z + 6)
+		s:cyl("StandFoot", 0.3, 2.4, base * CFrame.new(0, 0.15, 0), Palette.SteelDark, M.Metal, false)
+		s:cyl("Stand", 3, 0.3, base * CFrame.new(0, 1.6, 0), Palette.SteelDark, M.Metal, false)
+		local aim = CFrame.lookAt((base * CFrame.new(0, 3.4, 0)).Position, v3(0, 8, MACHINE_Z))
+		s:deco("StageLight", v3(1.4, 1.4, 2.2), aim, Palette.SteelDark, M.Metal)
+		local lens = s:glow("StageLightLens", v3(1.1, 1.1, 0.1), aim * CFrame.new(0, 0, -1.12), THEME.machine.glow)
+		s:spot(lens, THEME.machine.glow, 28, 2, 40, Enum.NormalId.Front)
 	end
 
 	-- Stations around the roll hall
