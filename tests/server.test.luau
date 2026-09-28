@@ -100,9 +100,9 @@ T.run(function()
 		end
 	end
 	print(`  (map has {parts} parts)`)
-	-- A furnished prison (cells, props, six machines) is a few thousand anchored parts; keep it well under
-	-- what mobile devices handle comfortably.
-	check("map stays within its part budget (< 7000 parts)", parts < 7000, parts)
+	-- A furnished prison (architecture, cells, props, six machines) is several thousand anchored,
+	-- non-colliding-detail parts; keep it well under what mobile devices handle comfortably.
+	check("map stays within its part budget (< 8000 parts)", parts < 8000, parts)
 	check("a Roll prompt on every machine", actions.Roll == 6, actions.Roll)
 	check("an Unlock prompt on every gate", actions.Unlock == 5, actions.Unlock)
 	for _, action in { "Shop", "Upgrades", "Book", "Rebirth", "FreeBoost", "DailyRoll" } do

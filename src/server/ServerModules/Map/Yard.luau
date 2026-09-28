@@ -1,7 +1,8 @@
--- The yard: the only place under open sky. A basketball court with bleachers, an outdoor gym,
--- picnic tables, the inmates' potato garden, two watch towers and tall walls topped with wire.
--- Events happen out here: the Prison King holds court on the basketball court, and escaped
--- Brainrots roam the open lawn.
+-- The yard: the only place under open sky. A paved exercise yard with expansion joints and
+-- terracotta paths, curbed planters with trees along the walls, a painted basketball court with
+-- bleachers, an outdoor gym, a picnic area under umbrellas, the inmates' garden, two watch towers
+-- and brick-banded walls topped with wire. Events happen out here: the Prison King holds court on
+-- the basketball court, and escaped Brainrots roam the open paving.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -22,23 +23,53 @@ local Y = MapLayout.FLOOR_Y
 local BOX = MapLayout.Yard
 local X1 = BOX.x1 + 2
 local MESS = MapLayout.MessHall
-local LAWN = rgb(104, 152, 76)
+local PAVING = rgb(204, 196, 182)
+local JOINT = rgb(168, 160, 148)
+local PAVER = rgb(196, 118, 84)
 local COURT = { x1 = 124, x2 = 176, z1 = 12, z2 = 40 }
-local WALL: Structure.WallStyle =
-	{ wall = Palette.ConcreteWarm, paint = Palette.ConcreteDark, paintHeight = 2.5, thickness = 2 }
+local WALL: Structure.WallStyle = {
+	wall = Palette.Concrete,
+	paint = Palette.Brick,
+	paintMaterial = M.Brick,
+	paintHeight = 6,
+	stripe = false,
+	pilasterEvery = 12,
+	thickness = 2,
+}
 
 Yard.KING =
 	CFrame.lookAt(v3((COURT.x1 + COURT.x2) / 2, Y, (COURT.z1 + COURT.z2) / 2), v3(X1, Y, (COURT.z1 + COURT.z2) / 2))
 
 local function ground(folder: Instance, s: Shapes.Shapes)
-	Structure.floor(folder, "Lawn", X1, BOX.x2, BOX.z1, MESS.z1 - 2, Y, LAWN, M.Grass)
-	Structure.floor(folder, "Lawn", MESS.x2 + 2, BOX.x2, MESS.z1 - 2, BOX.z2, Y, LAWN, M.Grass)
-	-- Concrete paths from the doors to the court and the gym
-	local path = Palette.Concrete
-	s:box("Path", v3(118 - X1, 0.1, 6), CFrame.new((X1 + 118) / 2, 0.05, -28), path, M.Concrete)
-	s:box("Path", v3(6, 0.1, 16), CFrame.new(68, 0.05, -20), path, M.Concrete)
-	s:box("Path", v3(6, 0.1, 37), CFrame.new(115, 0.05, -6.5), path, M.Concrete)
-	s:box("Path", v3(26, 0.1, 6), CFrame.new(131, 0.05, 8), path, M.Concrete)
+	-- Paving over the whole yard, scored into big slabs
+	Structure.floor(folder, "Paving", X1, BOX.x2, BOX.z1, MESS.z1 - 2, Y, PAVING, M.Pavement)
+	Structure.floor(folder, "Paving", MESS.x2 + 2, BOX.x2, MESS.z1 - 2, BOX.z2, Y, PAVING, M.Pavement)
+	local function joint(size: Vector3, at: CFrame)
+		s:deco("Joint", size, at, JOINT, M.Concrete).CastShadow = false
+	end
+	for x = X1 + 12, BOX.x2 - 4, 12 do
+		joint(v3(0.25, 0.04, MESS.z1 - 2 - BOX.z1), CFrame.new(x, 0.02, (BOX.z1 + MESS.z1 - 2) / 2))
+		if x > MESS.x2 + 2 then
+			joint(v3(0.25, 0.04, BOX.z2 - MESS.z1 + 2), CFrame.new(x, 0.02, (MESS.z1 - 2 + BOX.z2) / 2))
+		end
+	end
+	for z = BOX.z1 + 12, BOX.z2 - 4, 12 do
+		local from = if z < MESS.z1 - 2 then X1 else MESS.x2 + 2
+		joint(v3(BOX.x2 - from, 0.04, 0.25), CFrame.new((from + BOX.x2) / 2, 0.02, z))
+	end
+	-- Terracotta paths from the doors to the court and the gym
+	local function path(size: Vector3, at: CFrame)
+		s:box("Path", size, at, PAVER, M.Brick)
+	end
+	path(v3(118 - X1, 0.12, 6), CFrame.new((X1 + 118) / 2, 0.06, -28))
+	path(v3(6, 0.12, 16), CFrame.new(68, 0.06, -20))
+	path(v3(6, 0.12, 37), CFrame.new(115, 0.06, -6.5))
+	path(v3(26, 0.12, 6), CFrame.new(131, 0.06, 8))
+	-- Curbed planters with trees along the walls, clear of the open middle where escapees roam
+	Props.planter(folder, s:world(CFrame.new(X1 + 2.5, 0, -40) * CFrame.Angles(0, math.pi / 2, 0)), 30, 5, 3)
+	Props.planter(folder, s:world(CFrame.new(108, 0, BOX.z1 + 3)), 24, 5, 2)
+	Props.planter(folder, s:world(CFrame.new(148, 0, BOX.z2 - 2.5)), 90, 4.5, 5)
+	Props.planter(folder, s:world(CFrame.new(BOX.x2 - 2.5, 0, 26) * CFrame.Angles(0, math.pi / 2, 0)), 40, 4.5, 3)
 end
 
 local function walls(folder: Instance, s: Shapes.Shapes)
@@ -77,7 +108,8 @@ end
 local function court(folder: Instance, s: Shapes.Shapes)
 	local cx, cz = (COURT.x1 + COURT.x2) / 2, (COURT.z1 + COURT.z2) / 2
 	local w, d = COURT.x2 - COURT.x1, COURT.z2 - COURT.z1
-	s:box("Court", v3(w + 4, 0.2, d + 4), CFrame.new(cx, 0.1, cz), Palette.Asphalt, M.Asphalt)
+	s:box("Court", v3(w + 4, 0.2, d + 4), CFrame.new(cx, 0.1, cz), rgb(46, 118, 150), M.Asphalt)
+	s:deco("CourtApron", v3(w + 8, 0.16, d + 8), CFrame.new(cx, 0.08, cz), rgb(60, 66, 80), M.Asphalt)
 	local line = Palette.White
 	local function paint(name: string, size: Vector3, at: CFrame, color: Color3)
 		s:deco(name, size, at, color, M.SmoothPlastic).CastShadow = false
@@ -94,7 +126,7 @@ local function court(folder: Instance, s: Shapes.Shapes)
 		false
 	for _, side in { -1, 1 } do
 		local x = if side < 0 then COURT.x1 + 6 else COURT.x2 - 6
-		paint("Key", v3(12, 0.03, 10), CFrame.new(x, 0.21, cz), rgb(170, 70, 50))
+		paint("Key", v3(12, 0.03, 10), CFrame.new(x, 0.21, cz), rgb(236, 120, 60))
 		paint("KeyLine", v3(0.4, 0.035, 10), CFrame.new(x + side * -6, 0.216, cz), line)
 		Props.hoop(
 			folder,
@@ -158,6 +190,21 @@ local function grounds(folder: Instance, s: Shapes.Shapes)
 	-- Picnic tables near the doors
 	for i, spot in { v3(62, 0, -42), v3(82, 0, -50), v3(96, 0, -40) } do
 		Props.picnicTable(folder, s:world(CFrame.new(spot) * CFrame.Angles(0, math.rad(i * 25 - 30), 0)))
+		-- A striped umbrella over each table
+		s:deco("UmbrellaPole", v3(0.25, 7.4, 0.25), CFrame.new(spot + v3(0, 3.7, 0)), Palette.Frame, M.Metal)
+		for segment = 0, 7 do
+			local angle = segment * math.pi / 4
+			s:deco(
+				"Umbrella",
+				v3(2.6, 0.2, 3.4),
+				CFrame.new(spot + v3(0, 7.2, 0))
+					* CFrame.Angles(0, angle, 0)
+					* CFrame.new(0, 0, -1.6)
+					* CFrame.Angles(math.rad(-16), 0, 0),
+				if segment % 2 == 0 then Palette.Orange else Palette.White,
+				M.Fabric
+			)
+		end
 	end
 	for _, x in { 60, 82 } do
 		Props.bench(folder, s:world(CFrame.new(x, 0, MESS.z1 - 4)), 8)
@@ -184,7 +231,7 @@ local function grounds(folder: Instance, s: Shapes.Shapes)
 		folder,
 		s:world(CFrame.new(garden + v3(0, 4.5, -11.6))),
 		v2(9, 2),
-		"🥔 INMATE GARDEN",
+		"🌱 INMATE GARDEN",
 		rgb(80, 120, 60),
 		{ text = Palette.White }
 	)
@@ -231,15 +278,10 @@ local function grounds(folder: Instance, s: Shapes.Shapes)
 
 	-- Trees beyond the walls
 	for i = 0, 5 do
-		local tree = v3(BOX.x2 + 14 + (i % 2) * 6, 0, BOX.z1 + 6 + i * 22)
-		s:cyl("TreeTrunk", 14, 2, CFrame.new(tree + v3(0, 7, 0)), Palette.WoodDark, M.Wood)
-		s:ball("TreeCanopy", 12, tree + v3(0, 17, 0), rgb(70, 130, 60), M.Grass, false)
-		s:ball("TreeCanopy", 9, tree + v3(3, 21, 2), rgb(84, 146, 70), M.Grass, false)
+		Props.tree(folder, s:world(CFrame.new(BOX.x2 + 14 + (i % 2) * 6, 0, BOX.z1 + 6 + i * 22)), 1.5)
 	end
 	for i = 0, 3 do
-		local tree = v3(70 + i * 38, 0, BOX.z1 - 16 - (i % 2) * 6)
-		s:cyl("TreeTrunk", 14, 2, CFrame.new(tree + v3(0, 7, 0)), Palette.WoodDark, M.Wood)
-		s:ball("TreeCanopy", 12, tree + v3(0, 17, 0), rgb(70, 130, 60), M.Grass, false)
+		Props.tree(folder, s:world(CFrame.new(70 + i * 38, 0, BOX.z1 - 16 - (i % 2) * 6)), 1.5)
 	end
 end
 
