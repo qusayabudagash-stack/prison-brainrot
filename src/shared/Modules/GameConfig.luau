@@ -23,7 +23,7 @@ GameConfig.ROLL = {
 	-- Seconds the server waits between two rolls from the same player.
 	minInterval = 1.2,
 	-- Base length of the roll animation in seconds, before each rarity adds its own suspense.
-	spinTime = 2.4,
+	spinTime = 3.2,
 }
 
 -- Chance per roll at 1x luck for the rolled Brainrot to be Golden or Diamond.
