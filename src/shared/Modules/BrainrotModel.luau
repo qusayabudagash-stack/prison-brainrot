@@ -41,6 +41,7 @@ local FACE_PARTS = {
 	Teeth = true,
 	Tongue = true,
 	BuckTooth = true,
+	Tooth = true,
 	GlowEye = true,
 	EyeArc = true,
 	Badge = true,
