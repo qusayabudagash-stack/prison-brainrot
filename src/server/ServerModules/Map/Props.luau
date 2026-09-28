@@ -21,7 +21,9 @@ function Props.ceilingLight(parent: Instance, cframe: CFrame, length: number, co
 	local glow = color or Palette.LightWarm
 	local drop = hang or 0
 	if drop > 0 then
-		s:deco("Hanger", v3(0.1, drop, 0.1), CFrame.new(0, 0.4 + drop / 2, 0), Palette.Frame, M.Metal)
+		for _, x in { -length / 2 + 0.5, length / 2 - 0.5 } do
+			s:deco("Hanger", v3(0.08, drop, 0.08), CFrame.new(x, 0.4 + drop / 2, 0), Palette.SteelDark, M.Metal)
+		end
 	end
 	s:deco("Housing", v3(length, 0.4, 1.6), CFrame.new(0, 0.3, 0), Palette.SteelLight, M.Metal)
 	local tube = s:glow("Tube", v3(length - 0.4, 0.14, 1.1), CFrame.new(0, 0.05, 0), glow)
@@ -201,12 +203,12 @@ function Props.vending(parent: Instance, cframe: CFrame, body: Color3, logo: str
 	local goods = { Palette.Red, Palette.Blue, Palette.Hazard, Palette.Green, Palette.Orange }
 	for row = 0, 3 do
 		s:deco("Shelf", v3(2.7, 0.08, 0.8), CFrame.new(-0.55, 2.3 + row * 1.2, -1.25), Palette.SteelLight, M.Metal)
-		for col = 0, 1 do
+		for col = 0, 3 do
 			local color = goods[(row * 2 + col) % #goods + 1]
 			s:deco(
 				"Snack",
-				v3(1.1, 0.75, 0.45),
-				CFrame.new(-1.4 + col * 1.4, 2.72 + row * 1.2, -1.3),
+				v3(0.5, 0.75, 0.45),
+				CFrame.new(-1.6 + col * 0.7, 2.72 + row * 1.2, -1.3),
 				color,
 				M.SmoothPlastic
 			)
@@ -238,75 +240,20 @@ end
 -- A potted fake plant (the only green thing the warden allows indoors).
 function Props.plant(parent: Instance, cframe: CFrame)
 	local s = Shapes.model(parent, "Plant", cframe)
-	local pot = rgb(200, 112, 72)
-	s:cyl("Pot", 1.8, 2, CFrame.new(0, 0.9, 0), pot, M.SmoothPlastic)
-	s:cyl("PotRim", 0.35, 2.3, CFrame.new(0, 1.75, 0), pot:Lerp(Palette.Ink, 0.15), M.SmoothPlastic)
-	s:cyl("Soil", 0.1, 1.8, CFrame.new(0, 1.9, 0), Palette.Dirt, M.Ground, false)
+	s:cyl("Pot", 1.8, 2, CFrame.new(0, 0.9, 0), Palette.ConcreteDark, M.Concrete)
+	s:cyl("Soil", 0.1, 1.8, CFrame.new(0, 1.8, 0), Palette.Dirt, M.Ground, false)
 	for i = 0, 4 do
 		local angle = i * math.pi * 2 / 5
 		s:ball(
 			"Leaves",
 			1.5 - (i % 2) * 0.3,
 			v3(math.cos(angle) * 0.5, 2.6 + (i % 3) * 0.5, math.sin(angle) * 0.5),
-			if i % 2 == 0 then rgb(76, 160, 84) else rgb(98, 182, 96),
-			M.SmoothPlastic,
+			rgb(70, 140, 70),
+			M.Grass,
 			false
 		)
 	end
-	s:ball("Leaves", 1.6, v3(0, 3.5, 0), rgb(110, 192, 104), M.SmoothPlastic, false)
-end
-
--- A stylized tree: a slightly leaning trunk and a cluster of round canopies in two greens.
-function Props.tree(parent: Instance, cframe: CFrame, size: number?)
-	local k = size or 1
-	local s = Shapes.model(parent, "Tree", cframe)
-	s:cyl(
-		"Trunk",
-		7 * k,
-		1.1 * k,
-		CFrame.new(0, 3.5 * k, 0) * CFrame.Angles(0, 0, math.rad(4)),
-		rgb(120, 84, 58),
-		M.Wood
-	)
-	for i, blob in
-		{
-			{ 0, 8.2, 0, 5.6 },
-			{ 1.9, 7.4, 1.0, 3.9 },
-			{ -1.2, 9.6, -0.6, 3.8 },
-		}
-	do
-		s:ball(
-			"Canopy",
-			blob[4] * k,
-			v3(blob[1] * k, blob[2] * k, blob[3] * k),
-			if i % 2 == 0 then rgb(88, 168, 86) else rgb(70, 146, 76),
-			M.SmoothPlastic,
-			false
-		)
-	end
-end
-
--- A curbed planter bed with grass, low bushes and optional trees.
-function Props.planter(parent: Instance, cframe: CFrame, width: number, depth: number, trees: number?)
-	local s = Shapes.model(parent, "Planter", cframe)
-	s:box("Curb", v3(width, 1, depth), CFrame.new(0, 0.5, 0), Palette.ConcreteDark, M.Concrete)
-	s:deco("Bed", v3(width - 0.8, 0.1, depth - 0.8), CFrame.new(0, 1.02, 0), rgb(92, 150, 72), M.Grass)
-	local count = math.max(1, math.floor(width / 5))
-	for i = 1, count do
-		local x = -width / 2 + (i - 0.5) * width / count
-		s:ball(
-			"Bush",
-			1.8 + (i % 2) * 0.5,
-			v3(x, 1.4, (i % 2 - 0.5) * (depth - 2.4) * 0.5),
-			rgb(82, 160, 84),
-			M.SmoothPlastic,
-			false
-		)
-	end
-	for i = 1, trees or 0 do
-		local x = -width / 2 + (i - 0.5) * width / (trees or 1)
-		Props.tree(s.parent, s:world(CFrame.new(x, 1, 0)), 0.9 + (i % 2) * 0.15)
-	end
+	s:ball("Leaves", 1.6, v3(0, 3.5, 0), rgb(84, 158, 80), M.Grass, false)
 end
 
 -- A round wall clock.

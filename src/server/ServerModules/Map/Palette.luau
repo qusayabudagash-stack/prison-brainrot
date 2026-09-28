@@ -1,28 +1,23 @@
--- The prison's art direction: a stylized, colorful modern prison. Warm cream plaster walls over a
--- teal painted band with a yellow stripe, charcoal structure (pilasters, beams, frames), tiled
--- floors and dark ceilings that frame the rooms. The strong colors are saved for things you can use:
--- machines, stations, doors, signs, rewards and the rare blocks, so the Brainrots stay the stars.
+-- The prison's controlled palette. Environments stay neutral (concrete, steel, painted walls) so the
+-- strong colors are saved for things you can use: machines, stations, signs, rewards and rare areas.
 
 local rgb = Color3.fromRGB
 local M = Enum.Material
 
 local Palette = {
 	-- Structure
-	Concrete = rgb(234, 224, 204), -- upper walls: warm cream plaster
-	ConcreteDark = rgb(178, 168, 152),
-	ConcreteWarm = rgb(240, 228, 206),
-	Paint = rgb(52, 126, 138), -- lower wall band: prison teal
-	PaintDark = rgb(40, 98, 110),
-	Stripe = rgb(250, 190, 60), -- the painted stripe above the band
-	Frame = rgb(56, 62, 78), -- charcoal structure: pilasters, beams, cornices, door frames
-	FrameLight = rgb(88, 96, 114),
-	Floor = rgb(178, 174, 166),
-	FloorDark = rgb(118, 116, 112),
-	FloorLight = rgb(212, 206, 194),
-	Tile = rgb(222, 216, 204),
-	Brick = rgb(168, 96, 72),
-	BrickDark = rgb(124, 70, 56),
-	Roof = rgb(66, 70, 84), -- ceilings stay dark so the walls and machines read
+	Concrete = rgb(200, 196, 188),
+	ConcreteDark = rgb(152, 149, 143),
+	ConcreteWarm = rgb(214, 205, 190),
+	Paint = rgb(98, 124, 132), -- lower wall paint, institutional teal-gray
+	PaintDark = rgb(72, 94, 102),
+	Floor = rgb(160, 158, 152),
+	FloorDark = rgb(112, 110, 106),
+	FloorLight = rgb(196, 194, 188),
+	Tile = rgb(214, 212, 204),
+	Brick = rgb(150, 92, 72),
+	BrickDark = rgb(112, 68, 56),
+	Roof = rgb(120, 118, 114),
 
 	-- Metal
 	Steel = rgb(104, 110, 120),
@@ -61,8 +56,8 @@ local Palette = {
 }
 
 Palette.Materials = {
-	Wall = M.Plaster,
-	Floor = M.CeramicTiles,
+	Wall = M.Concrete,
+	Floor = M.Concrete,
 	FloorPolished = M.Marble,
 	Metal = M.Metal,
 	Plate = M.DiamondPlate,

@@ -12,7 +12,3 @@ sourcemap.json
 .DS_Store
 Thumbs.db
 rojo.exe
-
-# Blender model pipeline mesh cache
-tools/models/.cache/
-__pycache__/
