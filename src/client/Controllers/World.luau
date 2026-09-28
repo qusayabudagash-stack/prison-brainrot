@@ -1,11 +1,11 @@
 -- Local-only changes to the world for this player:
---   * gates to blocks you've unlocked open (for you only - the server still checks unlocks when rolling)
+--   * gates to blocks you've unlocked open (for you only - the server still checks unlocks when rolling):
+--     the bars slide up into the frame the moment you unlock one
 --   * roll machine screens show YOUR discounted price, or LOCKED
---   * the featured Brainrots on top of the machines spin
+-- (Controllers/Animator spins the machines' featured Brainrots.)
 
-local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local AreaData = require(ReplicatedStorage.Modules.AreaData)
 local Format = require(ReplicatedStorage.Modules.Format)
@@ -14,7 +14,9 @@ local State = require(script.Parent.State)
 
 local World = {}
 
-local spinners: { [Model]: CFrame } = {}
+-- Gates we've already shown as open, so the slide only plays when a gate actually opens.
+local opened: { [Model]: boolean } = {}
+local seen: { [Model]: boolean } = {}
 
 local function findGate(instance: Instance): Model?
 	local current: Instance? = instance
@@ -35,13 +37,29 @@ local function applyGate(gate: Model)
 		return
 	end
 	local unlocked = data.unlockedAreas[area.id] == true
+	-- Slide the bars up only if we watched this gate go from locked to unlocked
+	local animate = unlocked and seen[gate] == true and not opened[gate]
+	seen[gate] = true
+	if unlocked then
+		opened[gate] = true
+	end
 	for _, descendant in gate:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			if descendant.Name == "Collider" then
 				descendant.CanCollide = not unlocked
 				descendant.Transparency = if unlocked then 1 else 0.3
 			elseif descendant.Name == "Bar" then
-				descendant.Transparency = if unlocked then 1 else 0
+				if animate then
+					local goal = descendant.CFrame + Vector3.new(0, 12, 0)
+					local slide =
+						TweenService:Create(descendant, TweenInfo.new(1.4, Enum.EasingStyle.Quad), { CFrame = goal })
+					slide:Play()
+					slide.Completed:Connect(function()
+						descendant.Transparency = 1
+					end)
+				else
+					descendant.Transparency = if unlocked then 1 else 0
+				end
 			end
 		elseif descendant:IsA("ProximityPrompt") then
 			descendant.Enabled = not unlocked
@@ -98,12 +116,6 @@ local function applyAll()
 	end
 end
 
-local function addSpinner(instance: Instance)
-	if instance:IsA("Model") then
-		spinners[instance] = instance:GetPivot()
-	end
-end
-
 function World.init()
 	State.Changed:Connect(applyAll)
 
@@ -132,26 +144,6 @@ function World.init()
 			end)
 		end
 		applyAll()
-	end)
-
-	for _, model in CollectionService:GetTagged("Spin") do
-		addSpinner(model)
-	end
-	CollectionService:GetInstanceAddedSignal("Spin"):Connect(addSpinner)
-	CollectionService:GetInstanceRemovedSignal("Spin"):Connect(function(instance)
-		if instance:IsA("Model") then
-			spinners[instance] = nil
-		end
-	end)
-	RunService.RenderStepped:Connect(function()
-		local angle = os.clock() * 0.9
-		for model, base in spinners do
-			if model.Parent then
-				model:PivotTo(base * CFrame.Angles(0, angle, 0))
-			else
-				spinners[model] = nil
-			end
-		end
 	end)
 end
 

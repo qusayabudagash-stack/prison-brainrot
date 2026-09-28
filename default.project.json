@@ -37,7 +37,12 @@
 					"Color": [0.431, 0.776, 0.388],
 					"Locked": true,
 					"Material": "Grass",
-					"Position": [0, -2, -150],
+					"CFrame": {
+						"CFrame": {
+							"position": [0, -2, -150],
+							"orientation": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+						}
+					},
 					"Size": [1024, 4, 1024]
 				}
 			},
@@ -45,22 +50,69 @@
 				"$className": "SpawnLocation",
 				"$properties": {
 					"Anchored": true,
-					"Color": [1, 0.8, 0.2],
+					"CanCollide": false,
+					"Transparency": 1,
 					"Duration": 0,
-					"Material": "Neon",
-					"Position": [0, 1.5, 40],
-					"Size": [10, 1, 10]
+					"Material": "SmoothPlastic",
+					"CFrame": {
+						"CFrame": {
+							"position": [0, 1.1, 64],
+							"orientation": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+						}
+					},
+					"Size": [12, 0.2, 8]
 				}
 			}
 		},
 
 		"Lighting": {
 			"$properties": {
-				"Ambient": [0.45, 0.45, 0.5],
-				"Brightness": 3,
-				"ClockTime": 14,
-				"GlobalShadows": true,
-				"OutdoorAmbient": [0.6, 0.6, 0.65]
+				"Technology": "Future",
+				"Ambient": [0.5, 0.48, 0.455],
+				"OutdoorAmbient": [0.55, 0.54, 0.57],
+				"Brightness": 2.4,
+				"ClockTime": 14.5,
+				"GeographicLatitude": 30,
+				"EnvironmentDiffuseScale": 1,
+				"EnvironmentSpecularScale": 1,
+				"ExposureCompensation": 0.1,
+				"ShadowSoftness": 0.25,
+				"GlobalShadows": true
+			},
+			"Atmosphere": {
+				"$className": "Atmosphere",
+				"$properties": {
+					"Density": 0.22,
+					"Offset": 0.1,
+					"Color": [0.808, 0.769, 0.722],
+					"Decay": [0.47, 0.43, 0.39],
+					"Glare": 0.2,
+					"Haze": 0.6
+				}
+			},
+			"Bloom": {
+				"$className": "BloomEffect",
+				"$properties": {
+					"Intensity": 0.9,
+					"Size": 24,
+					"Threshold": 1.3
+				}
+			},
+			"ColorCorrection": {
+				"$className": "ColorCorrectionEffect",
+				"$properties": {
+					"Brightness": 0.02,
+					"Contrast": 0.08,
+					"Saturation": 0.06,
+					"TintColor": [1, 0.976, 0.941]
+				}
+			},
+			"SunRays": {
+				"$className": "SunRaysEffect",
+				"$properties": {
+					"Intensity": 0.05,
+					"Spread": 0.8
+				}
 			}
 		}
 	}

@@ -5,8 +5,11 @@
 local Controllers = script.Controllers
 local UI = script.UI
 
+local Ambience = require(Controllers.Ambience)
 local AnnouncementUI = require(UI.AnnouncementUI)
+local Animator = require(Controllers.Animator)
 local CollectionUI = require(UI.CollectionUI)
+local Machines = require(Controllers.Machines)
 local MainUI = require(UI.MainUI)
 local Prompts = require(Controllers.Prompts)
 local RebirthUI = require(UI.RebirthUI)
@@ -25,6 +28,9 @@ RebirthUI.init()
 TutorialUI.init()
 Prompts.init()
 World.init()
+Animator.init()
+Machines.init()
+Ambience.init()
 
 -- Last, so every screen is listening before the first data snapshot arrives.
 State.init()
