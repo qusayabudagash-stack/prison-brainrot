@@ -133,11 +133,14 @@ T.run(function()
 	---------------------------------------------------------------------------
 	section("Rolling from the HUD")
 	---------------------------------------------------------------------------
+	local coinsBefore, earnedBefore = data.coins, data.totalEarned
 	click(screen("MainUI"), "🎰 ROLL")
 	check("roll screen opens", screen("RollUI").Enabled == true)
 	finishRoll()
 	check("rolled once", data.totalRolls == 1)
-	check("paid $100", data.coins < 100)
+	-- Income keeps ticking during the roll (faster if the roll was lucky), so count it back in
+	local paid = coinsBefore + (data.totalEarned - earnedBefore) - data.coins
+	check("paid $100", math.abs(paid - 100) < 0.01, paid)
 	check("roll screen closes", screen("RollUI").Enabled == false)
 
 	EconomyService.add(alice, 1e6)

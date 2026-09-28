@@ -292,4 +292,218 @@ Divine.HaloHooligan = function(k)
 	return body
 end
 
+---------------------------------------------------------------------------
+-- Tralalero Tralala: the three-legged shark in sneakers
+---------------------------------------------------------------------------
+
+local SHARK = rgb(66, 140, 222)
+local SHARK_DARK = rgb(44, 104, 186)
+local BELLY = rgb(240, 244, 250)
+local LEG = rgb(236, 190, 150)
+local SNEAKER = rgb(34, 100, 228)
+
+export type SharkStyle = {
+	skin: Color3?,
+	dark: Color3?,
+	sneaker: Color3?,
+}
+
+-- One shark on three legs, built in the frame `at` (facing its -Z) at size `s`. Returns the widest
+-- body part.
+local function shark(k: Kit, at: CFrame, s: number, style: SharkStyle?): BasePart
+	local look: SharkStyle = style or {}
+	local skin = look.skin or SHARK
+	local dark = look.dark or SHARK_DARK
+	local function p(x: number, y: number, z: number): Vector3
+		return (at * CFrame.new(x * s, y * s, z * s)).Position
+	end
+	local function dir(x: number, y: number, z: number): Vector3
+		return at:VectorToWorldSpace(v3(x, y, z))
+	end
+
+	-- Head: a real ellipsoid, nose tipped up a little, so the face features sit exactly on it
+	local tilt = at.Rotation * CFrame.Angles(math.rad(6), 0, 0)
+	local head: Kit.Shell = { center = p(0, 3.1, -2.02), radii = v3(1.1, 1.02, 1.38) * s, rotation = tilt }
+	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center) * tilt, skin, nil, "Body")
+	k:ellipsoid(
+		"Chin",
+		v3(1.08, 0.78, 1.3) * 2 * s,
+		CFrame.new(head.center) * tilt * CFrame.new(0, -0.3 * s, -0.02 * s),
+		BELLY,
+		nil,
+		"Body"
+	)
+
+	-- Body: one long torso ellipsoid (smooth, no seams) and a tapering tail, countershaded with a
+	-- white belly that shows below the midline
+	local torsoAt = CFrame.new(p(0, 3.04, -0.95)) * at.Rotation
+	local torso = k:ellipsoid("Skin", v3(1.15, 1.08, 2.15) * 2 * s, torsoAt, skin, nil, "Body")
+	-- Blends the head into the torso so there is no neck crease
+	k:ellipsoid("Skin", v3(1.12, 1.05, 1.1) * 2 * s, CFrame.new(p(0, 3.07, -1.75)) * at.Rotation, skin, nil, "Body")
+	k:ellipsoid("Belly", v3(1.17, 0.82, 2.13) * 2 * s, torsoAt * CFrame.new(0, -0.32 * s, 0), BELLY, nil, "Body")
+	local tail = {
+		{ z = -0.3, y = 3.04, w = 0.98, h = 0.93 },
+		{ z = 0.6, y = 3.08, w = 0.8, h = 0.77 },
+		{ z = 1.4, y = 3.16, w = 0.57, h = 0.55 },
+		{ z = 2.2, y = 3.27, w = 0.35, h = 0.36 },
+		{ z = 3.0, y = 3.36, w = 0.19, h = 0.21 },
+	}
+	local top: { Kit.Section } = {}
+	local under: { Kit.Section } = {}
+	for _, point in tail do
+		table.insert(top, { at = p(0, point.y, point.z), w = point.w * s, h = point.h * s })
+		table.insert(
+			under,
+			{ at = p(0, point.y - point.h * 0.3, point.z), w = (point.w + 0.02) * s, h = point.h * 0.76 * s }
+		)
+	end
+	k:loft("Skin", top, skin, nil, "Body", { density = 1, overlap = 9 })
+	k:loft("Belly", under, BELLY, nil, "Body", { density = 1, overlap = 9 })
+
+	-- Gill slits
+	local flank: Kit.Shell = { center = p(0, 3.02, -1.25), radii = v3(1.12, 1.06, 1.3) * s, rotation = at.Rotation }
+	for _, side in { -1, 1 } do
+		for i = 0, 1 do
+			Parts.patch(k, "Gill", flank, side * (100 + i * 11), 4, 0.08 * s, 0.62 * s, dark, nil, "Body", side * 8)
+		end
+	end
+
+	-- Fins: thin lofts, their chords running front to back
+	local fore = dir(0, 0, -1)
+	local function fin(name: string, points: { { number } }, color: Color3, up: Vector3?, density: number?)
+		local sections: { Kit.Section } = {}
+		for _, q in points do
+			table.insert(sections, { at = p(q[1], q[2], q[3]), w = q[4] * s, h = q[5] * s })
+		end
+		k:loft(
+			name,
+			sections,
+			color,
+			nil,
+			"Body",
+			{ up = up or fore, density = density or 0.38, overlap = 4.5, minSpacing = 0.16 * s }
+		)
+	end
+	fin("DorsalFin", {
+		{ 0, 3.7, -0.65, 0.17, 0.8 },
+		{ 0, 4.45, -0.28, 0.13, 0.52 },
+		{ 0, 5.02, 0.22, 0.08, 0.25 },
+		{ 0, 5.32, 0.6, 0.035, 0.05 },
+	}, skin)
+	for _, side in { -1, 1 } do
+		fin("PectoralFin", {
+			{ side * 0.8, 2.55, -1.4, 0.13, 0.52 },
+			{ side * 1.5, 2.2, -1.02, 0.09, 0.34 },
+			{ side * 2.05, 1.98, -0.55, 0.035, 0.06 },
+		}, skin, nil, 0.55)
+	end
+	local aft = dir(0, 0, 1)
+	fin("TailFin", {
+		{ 0, 3.36, 2.8, 0.11, 0.36 },
+		{ 0, 3.95, 3.28, 0.08, 0.3 },
+		{ 0, 4.62, 3.78, 0.03, 0.05 },
+	}, skin, aft, 0.45)
+	fin("TailFin", {
+		{ 0, 3.3, 2.9, 0.1, 0.28 },
+		{ 0, 2.86, 3.26, 0.07, 0.19 },
+		{ 0, 2.52, 3.52, 0.03, 0.05 },
+	}, dark, aft, 0.5)
+	fin("SmallFin", { { 0, 3.55, 1.85, 0.07, 0.22 }, { 0, 3.9, 2.15, 0.03, 0.04 } }, skin, nil, 0.8)
+	fin("SmallFin", { { 0, 2.8, 2.05, 0.06, 0.18 }, { 0, 2.55, 2.32, 0.03, 0.04 } }, BELLY, nil, 0.8)
+
+	-- Face: smug half-lidded eyes, nostrils and a big toothy grin
+	k:eyes(head, 33, 20, {
+		width = 0.52 * s,
+		height = 0.58 * s,
+		iris = rgb(30, 36, 52),
+		skin = skin,
+	}, "Body")
+	for _, side in { -1, 1 } do
+		k:ellipsoid(
+			"BrowRidge",
+			v3(0.78, 0.2, 0.4) * s,
+			Kit.on(head, side * 31, 37, 0) * CFrame.Angles(0, 0, math.rad(side * -18)),
+			dark,
+			nil,
+			"Body"
+		)
+	end
+	for _, side in { -1, 1 } do
+		k:ellipsoid("Nostril", v3(0.12, 0.06, 0.08) * s, Kit.on(head, side * 13, 8, -0.02 * s), dark, nil, "Body")
+	end
+	local function smile(yaw: number): number
+		return -19 + 14 * (yaw / 60) ^ 2
+	end
+	local function gap(yaw: number): number
+		return 13 - 9.5 * (math.abs(yaw) / 64) ^ 1.6
+	end
+	local mouth: { Kit.Section } = {}
+	for yaw = -64, 64, 12.8 do
+		local point, normal = Kit.surface(head, yaw, smile(yaw))
+		table.insert(mouth, { at = point - normal * 0.02 * s, w = 0.07 * s, h = gap(yaw) / 57.3 * 0.94 * s })
+	end
+	k:loft("Mouth", mouth, rgb(72, 20, 34), nil, "Body", { density = 3, overlap = 2.6, minSpacing = 0.3 * s })
+	k:ellipsoid(
+		"Tongue",
+		v3(0.5, 0.14, 0.14) * s,
+		Kit.on(head, 0, smile(0) - gap(0) * 0.45, 0.01 * s),
+		Kit.Colors.Tongue,
+		nil,
+		"Body"
+	)
+	for yaw = -44, 44, 11 do
+		local edge = smile(yaw) + gap(yaw) * 0.95
+		local tooth = gap(yaw) / 57.3 * 0.94 * s * 1.3
+		k:tooth(Kit.on(head, yaw, edge, 0.035 * s), 0.17 * s, tooth, nil, "Body")
+	end
+	for yaw = -38.5, 38.5, 11 do
+		if math.abs(yaw) > 10 then
+			local edge = smile(yaw) - gap(yaw) * 0.95
+			local tooth = gap(yaw) / 57.3 * 0.94 * s * 1.15
+			k:tooth(Kit.on(head, yaw, edge, 0.035 * s), 0.16 * s, -tooth, nil, "Body")
+		end
+	end
+
+	-- Three legs in white socks and blue sneakers: two up front, one behind
+	for _, leg in { { -0.56, -1.3 }, { 0.56, -1.3 }, { 0, 0.85 } } do
+		local x, z = leg[1], leg[2]
+		local hip, knee, ankle = p(x, 2.45, z), p(x * 1.08, 1.25, z - 0.1), p(x * 1.08, 0.5, z)
+		k:loft("Leg", {
+			{ at = hip, w = 0.3 * s, h = 0.3 * s },
+			{ at = knee, w = 0.25 * s, h = 0.25 * s },
+			{ at = ankle, w = 0.22 * s, h = 0.22 * s },
+		}, LEG, nil, "Legs", { density = 3.2, overlap = 7 })
+		k:oval(
+			"Sock",
+			CFrame.new(p(x * 1.08, 0.66, z)) * at.Rotation,
+			0.56 * s,
+			0.56 * s,
+			0.36 * s,
+			C.White,
+			Enum.Material.Fabric,
+			"Legs"
+		)
+		k:oval(
+			"SockStripe",
+			CFrame.new(p(x * 1.08, 0.74, z)) * at.Rotation,
+			0.58 * s,
+			0.58 * s,
+			0.07 * s,
+			SNEAKER,
+			Enum.Material.Fabric,
+			"Legs"
+		)
+		Parts.sneaker(k, p(x * 1.08, 0, z), 0.95 * s, { upper = look.sneaker or SNEAKER }, "Legs", 0)
+	end
+	k.model:SetAttribute("HeadTop", p(0, 4.05, -2.2))
+	k.model:SetAttribute("HeadWidth", 1.3 * s)
+	return torso
+end
+
+Divine.TralaleroTralala = function(k: Kit): BasePart
+	local body = shark(k, CFrame.identity, 1)
+	k:turn(-38)
+	return body
+end
+
 return Divine

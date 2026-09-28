@@ -66,6 +66,98 @@ function Parts.legs(
 	end
 end
 
+export type SneakerColors = {
+	upper: Color3,
+	sole: Color3?,
+	-- Side stripe, heel tab and laces.
+	accent: Color3?,
+	lace: Color3?,
+	collar: Color3?,
+}
+
+-- A chunky cartoon sneaker: rubber outsole, thick midsole, leather upper with a rounded toe box,
+-- padded collar, tongue, laces, a side stripe on each side and a heel tab. `ankle` is the ankle
+-- point (its height is ignored); `yaw` turns the toe in degrees.
+function Parts.sneaker(k: Kit, ankle: Vector3, size: number, colors: SneakerColors, rig: string?, yaw: number?)
+	local sole = colors.sole or C.Sole
+	local accent = colors.accent or C.White
+	local base = CFrame.new(ankle.X, 0, ankle.Z)
+		* CFrame.Angles(0, math.rad(yaw or 0), 0)
+		* CFrame.new(0, 0, -size * 0.22)
+	local width, length = size * 0.96, size * 1.6
+	k:oval(
+		"Outsole",
+		base * CFrame.new(0, size * 0.04, 0),
+		width * 1.03,
+		length * 1.02,
+		size * 0.08,
+		sole:Lerp(C.Ink, 0.45),
+		Enum.Material.Rubber,
+		rig
+	)
+	k:oval("Sole", base * CFrame.new(0, size * 0.16, 0), width, length, size * 0.2, sole, Enum.Material.Rubber, rig)
+	local upper: Kit.Shell = {
+		center = (base * CFrame.new(0, size * 0.33, size * 0.1)).Position,
+		radii = v3(width * 0.45, size * 0.34, length * 0.42),
+		rotation = base.Rotation,
+	}
+	k:ellipsoid(
+		"Shoe",
+		upper.radii * 2,
+		CFrame.new(upper.center) * base.Rotation,
+		colors.upper,
+		Enum.Material.Leather,
+		rig
+	)
+	k:ellipsoid(
+		"ToeBox",
+		v3(width * 0.86, size * 0.44, length * 0.5),
+		base * CFrame.new(0, size * 0.29, -length * 0.25),
+		colors.upper,
+		Enum.Material.Leather,
+		rig
+	)
+	k:oval(
+		"Collar",
+		base * CFrame.new(0, size * 0.6, size * 0.3),
+		size * 0.64,
+		size * 0.6,
+		size * 0.14,
+		colors.collar or colors.upper:Lerp(C.Ink, 0.3),
+		Enum.Material.Fabric,
+		rig
+	)
+	k:ellipsoid(
+		"ShoeTongue",
+		v3(size * 0.36, size * 0.44, size * 0.12),
+		base * CFrame.new(0, size * 0.6, size * 0.02) * CFrame.Angles(math.rad(-28), 0, 0),
+		colors.upper:Lerp(C.White, 0.15),
+		Enum.Material.Leather,
+		rig
+	)
+	for i = 0, 1 do
+		k:ellipsoid(
+			"Lace",
+			v3(width * 0.4, size * 0.08, size * 0.09),
+			Kit.on(upper, 0, 44 + i * 16, -size * 0.01),
+			colors.lace or C.White,
+			Enum.Material.Fabric,
+			rig
+		)
+	end
+	for _, side in { -1, 1 } do
+		Parts.patch(k, "ShoeStripe", upper, 92 * side, -8, length * 0.5, size * 0.13, accent, nil, rig, -14 * side)
+	end
+	k:ellipsoid(
+		"HeelTab",
+		v3(size * 0.24, size * 0.3, size * 0.1),
+		base * CFrame.new(0, size * 0.5, size * 0.66),
+		accent,
+		Enum.Material.Leather,
+		rig
+	)
+end
+
 -- Thin bird legs with three toes.
 function Parts.birdLegs(k: Kit, hipY: number, spread: number, color: Color3)
 	for _, side in { -1, 1 } do

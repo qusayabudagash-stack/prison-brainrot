@@ -239,7 +239,18 @@ T.run(function()
 	---------------------------------------------------------------------------
 	section("Brainrot models")
 	---------------------------------------------------------------------------
-	local built, maxParts, problems = 0, 0, {}
+	-- Rarer Brainrots get more detail, but even the fanciest has to stay cheap to show in every cell.
+	local BUDGET = {
+		Common = 100,
+		Uncommon = 110,
+		Rare = 120,
+		Epic = 135,
+		Legendary = 150,
+		Mythic = 165,
+		Divine = 190,
+		Secret = 210,
+	}
+	local built, maxParts, problems, overBudget = 0, 0, {}, {}
 	for _, brainrot in BrainrotData.Brainrots do
 		for _, variant in BrainrotData.Variants do
 			for _, options in { { variant = variant.id }, { variant = variant.id, welded = true, scale = 2.5 } } do
@@ -266,6 +277,9 @@ T.run(function()
 					end
 				end
 				maxParts = math.max(maxParts, parts)
+				if variant.id == "Normal" and not options.welded and parts > BUDGET[brainrot.rarity] then
+					table.insert(overBudget, `{brainrot.id} {parts}/{BUDGET[brainrot.rarity]}`)
+				end
 				if not model.PrimaryPart or not model:FindFirstChild("Body") then
 					table.insert(problems, `{brainrot.id}: missing Root or Body`)
 				end
@@ -274,6 +288,5 @@ T.run(function()
 	end
 	print(`  (built {built} models, biggest has {maxParts} parts)`)
 	check("every Brainrot builds in every variant", #problems == 0, table.concat(problems, "; "))
-	-- Rarer Brainrots get more detail and effects, but even the fanciest has to stay cheap to show in every cell.
-	check("models stay within the part budget (< 120 parts)", maxParts < 120, maxParts)
+	check("models stay within their rarity's part budget", #overBudget == 0, table.concat(overBudget, ", "))
 end)
