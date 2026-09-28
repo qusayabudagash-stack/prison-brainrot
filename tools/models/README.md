@@ -7,8 +7,8 @@ cubes turns into a mesh. Blender (as a Python module) paints, lights and renders
 ```
 tools/models/setup.sh                      # venv with bpy 4.5, numpy, scipy, scikit-image
 .venv/bin/python tools/models/build.py tralalero_tralala --quality preview --views threequarter
-.venv/bin/python tools/models/build.py tralalero_tralala --quality final \
-    --views threequarter,front,side,thumbnail,scale
+.venv/bin/python tools/models/build.py tralalero_tralala --quality final --bricks 0.2 \
+    --views threequarter,front,side,surface,thumbnail,scale,gameplay
 ```
 
 - `sdf.py`: distance-field shapes (`Loft` bodies with round or rounded-box sections, `Blade` fins,
@@ -24,6 +24,11 @@ tools/models/setup.sh                      # venv with bpy 4.5, numpy, scipy, sc
   `surface` for a close-up of the stud surface, and `silhouette` / `silhouette_side` as flat black
   shapes). `--game` renders the in-game meshes, each part cut to its triangle budget;
   `--skip Teeth,Tongue` leaves parts out while debugging.
+- `bricks.py`: the brick-built style (`--bricks 0.2`). The same design is sampled on a grid of
+  cubic bricks; every brick face that shows gets a raised square stud, and each brick takes one
+  flat colour from the character's paint. A character can adjust brick colours in its look module
+  (`brick_colors`, `brick_eye_colors`) so small details become clean brick-sized pixels, and give a
+  part a `brick_fn` without details thinner than a brick.
 - `characters/<name>.py`: the character's geometry; `characters/<name>_look.py`: its paint and
   surface properties (kept apart so recoloring does not re-sculpt).
 

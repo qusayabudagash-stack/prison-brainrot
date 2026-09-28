@@ -22,6 +22,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "characters"))
 
+import bricks  # noqa: E402
 import scene  # noqa: E402
 import sdf  # noqa: E402
 
@@ -211,6 +212,53 @@ def studio(azimuth, target, radius):
     scene.world(color="#dfe3ea", strength=0.25)
 
 
+def build_bricks(look, meshes, size):
+    """The character rebuilt from studded bricks: one flat-shaded mesh with per-brick colours."""
+    t0 = time.time()
+    parts = [m[0] for m in meshes]
+    fns = [p.get("brick_fn", p["fn"]) for p in parts]
+    eyes = getattr(look, "EYES", [])
+    for eye in eyes:
+        fns.append(lambda p, e=eye: sdf.sphere(p, e["center"], e["radius"]))
+    los = [np.asarray(p["box"][0]) for p in parts] + [e["center"] - e["radius"] for e in eyes]
+    his = [np.asarray(p["box"][1]) for p in parts] + [e["center"] + e["radius"] for e in eyes]
+    lo = np.min(los, axis=0)
+    lo[2] = 0.0
+    origin, solid, owner, _ = bricks.voxelize(fns, lo, np.max(his, axis=0), size)
+    colors = np.zeros(solid.shape + (3,))
+    rough = np.full(solid.shape, 0.42)
+    shows = np.any(bricks.exposed_faces(solid), axis=0)
+    for k, fn in enumerate(fns):
+        idx = np.argwhere(shows & (owner == k))
+        if not len(idx):
+            continue
+        centres = origin + (idx + 0.5) * size
+        if k < len(parts):
+            part = parts[k]
+            paint = part.get("base_paint", part["paint"])
+            col, attrs, points, normals = bricks.surface_colors(fn, paint, centres, size)
+            if hasattr(look, "brick_colors"):
+                col = look.brick_colors(part["name"], points, normals, col, size)
+            r = attrs["Roughness"]
+        else:
+            eye = eyes[k - len(parts)]
+            col, r = look.brick_eye_colors(eye, centres, size)
+        colors[idx[:, 0], idx[:, 1], idx[:, 2]] = col
+        rough[idx[:, 0], idx[:, 1], idx[:, 2]] = r
+    packed = np.concatenate([colors, rough[..., None]], axis=-1)
+    verts, faces, cols, _ = bricks.brick_mesh(origin, size, solid, packed)
+    n = len(verts)
+    attrs = {
+        "Roughness": cols[:, 3],
+        "CoatWeight": np.full(n, 0.08),
+        "SubsurfaceWeight": np.zeros(n),
+        "SheenWeight": np.zeros(n),
+        "Studs": np.zeros(n),
+    }
+    print(f"bricks: {int(solid.sum()):,} bricks, {int(shows.sum()):,} showing, {len(faces):,} triangles in {time.time() - t0:.1f}s", flush=True)
+    return verts, faces, cols[:, :3], attrs
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("character")
@@ -223,6 +271,7 @@ def main():
     parser.add_argument("--skip", default="", help="comma-separated part names to leave out (debugging)")
     parser.add_argument("--decimate", type=int, default=None, help="preview at a game budget: total triangles")
     parser.add_argument("--game", action="store_true", help="render the in-game meshes: each part cut to its budget")
+    parser.add_argument("--bricks", type=float, default=None, help="build the character from studded bricks of this size")
     args = parser.parse_args()
 
     geometry = importlib.import_module(args.character)
@@ -244,7 +293,11 @@ def main():
         col, attrs = part["paint"](verts, normals)
         painted.append((part, verts, faces, normals, col, attrs))
 
-    all_points = np.vstack([m[1][:: max(1, len(m[1]) // 3000)] for m in meshes])
+    brick_model = build_bricks(look, meshes, args.bricks) if args.bricks else None
+    if brick_model:
+        all_points = brick_model[0][:: max(1, len(brick_model[0]) // 6000)]
+    else:
+        all_points = np.vstack([m[1][:: max(1, len(m[1]) // 3000)] for m in meshes])
     lo = all_points.min(axis=0)
     hi = all_points.max(axis=0)
     for name in args.views.split(","):
@@ -254,13 +307,17 @@ def main():
         mat = surface_material()
         total = sum(len(p[2]) for p in painted)
         tris = {}
-        for part, verts, faces, normals, col, attrs in painted:
+        if brick_model:
+            bverts, bfaces, bcols, battrs = brick_model
+            scene.mesh_object("Bricks", bverts, bfaces, colors=bcols, attributes=battrs, material=mat, parent=root, smooth=False)
+        for part, verts, faces, normals, col, attrs in ([] if brick_model else painted):
             obj = scene.mesh_object(part["name"], verts, faces, vertex_normals=normals, colors=col, attributes=attrs, material=mat, parent=root)
             if args.game:
                 tris[part["name"]] = scene.decimate(obj, part["budget"] / len(faces), sharp_angle=part.get("sharp", 50))
             elif args.decimate:
                 scene.decimate(obj, args.decimate / total)
-        add_eyes(look, root, game=args.game)
+        if not brick_model:
+            add_eyes(look, root, game=args.game)
         if tris and name == args.views.split(",")[0]:
             eyes = 2 * (32 * 2 + 32 * 14 * 2)
             print("game triangles:", ", ".join(f"{k} {v:,}" for k, v in tris.items()), f"+ eyes {eyes:,}", f"= {sum(tris.values()) + eyes:,}", flush=True)
@@ -309,6 +366,8 @@ def main():
             scene.silhouette()
         t1 = time.time()
         suffix = "_game" if args.game else (f"_{args.decimate // 1000}k" if args.decimate else "")
+        if brick_model:
+            suffix = "_bricks" + suffix
         path = out / f"{geometry.ID}_{name}{suffix}.png"
         scene.render(path)
         print(f"rendered {path.name} in {time.time() - t1:.1f}s", flush=True)

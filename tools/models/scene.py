@@ -37,8 +37,8 @@ def reset():
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
-def mesh_object(name, verts, faces, vertex_normals=None, colors=None, attributes=None, material=None, parent=None):
-    """A mesh object from numpy arrays, smooth shaded.
+def mesh_object(name, verts, faces, vertex_normals=None, colors=None, attributes=None, material=None, parent=None, smooth=True):
+    """A mesh object from numpy arrays, smooth shaded (or flat with `smooth=False`).
 
     `colors` (N, 3) linear RGB per vertex become the "Col" attribute; `attributes` maps extra
     per-vertex float attribute names to (N,) arrays (roughness, subsurface ...).
@@ -60,7 +60,7 @@ def mesh_object(name, verts, faces, vertex_normals=None, colors=None, attributes
     me.polygons.add(len(faces))
     me.polygons.foreach_set("loop_start", np.arange(0, faces.size, 3, dtype=np.int32))
     me.update()
-    me.polygons.foreach_set("use_smooth", np.ones(len(faces), dtype=bool))
+    me.polygons.foreach_set("use_smooth", np.full(len(faces), smooth, dtype=bool))
     if vertex_normals is not None:
         me.normals_split_custom_set_from_vertices(np.asarray(vertex_normals, dtype=np.float32))
     if colors is not None:

@@ -295,7 +295,7 @@ _gills = sdf.bounded(gills, (-1.8, -1.4, 2.5), (1.8, 0.0, 4.2))
 _legs = sdf.bounded(legs, (-1.5, -1.6, 0.4), (1.5, 1.4, 3.3))
 
 
-def shark(p):
+def shark(p, gill_grooves=True):
     """The shark without legs: body, fins and face."""
     d = BODY(p)
     d = smin(d, _dorsal(p), 0.07)
@@ -308,12 +308,18 @@ def shark(p):
         d = carve(d, sphere(p, e["center"], EYE_RADIUS + 0.015), 0.02)
     d = smin(d, _brows(p), 0.02)
     d = carve(d, _mouth(p), 0.05)
-    d = carve(d, _gills(p), 0.03)
+    if gill_grooves:
+        d = carve(d, _gills(p), 0.03)
     return d
 
 
 def body(p):
     return smin(shark(p), _legs(p), 0.07)
+
+
+def body_for_bricks(p):
+    """The body without gill grooves: thinner than a brick, they are painted on instead."""
+    return smin(shark(p, gill_grooves=False), _legs(p), 0.07)
 
 
 BODY_BOX = ((-3.5, -3.0, 0.5), (3.5, 3.1, 6.35))

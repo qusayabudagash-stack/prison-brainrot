@@ -157,15 +157,63 @@ def with_occlusion(paint, fn, strength=0.8, floor=0.6):
 
 
 PARTS = [
-    {"name": "Body", "fn": g.body, "box": g.BODY_BOX, "step": 0.02, "paint": with_occlusion(paint_body, g.body), "budget": 12000},
+    {"name": "Body", "fn": g.body, "box": g.BODY_BOX, "step": 0.02, "paint": with_occlusion(paint_body, g.body), "base_paint": paint_body, "brick_fn": g.body_for_bricks, "budget": 12000},
     {"name": "Teeth", "fn": g.teeth, "box": g.TEETH_BOX, "step": 0.008, "paint": paint_flat("tooth", 0.3, coat=0.3), "budget": 1800, "sharp": 40},
     {"name": "Tongue", "fn": g.tongue, "box": g.TONGUE_BOX, "step": 0.01, "paint": paint_flat("tongue", 0.4, coat=0.2), "budget": 300},
     *[{"name": f"Sock{i}", "fn": g.SOCK_FNS[i], "box": g.sock_box(i), "step": 0.012, "paint": paint_sock, "budget": 500} for i in range(3)],
     *[
-        {"name": f"Shoe{i}", "fn": g.SHOES[i], "box": g.SHOES[i].box(), "step": 0.012, "paint": with_occlusion(paint_shoe(i), g.SHOES[i]), "budget": 2400}
+        {"name": f"Shoe{i}", "fn": g.SHOES[i], "box": g.SHOES[i].box(), "step": 0.012, "paint": with_occlusion(paint_shoe(i), g.SHOES[i]), "base_paint": paint_shoe(i), "budget": 2400}
         for i in range(3)
     ],
 ]
 
 EYES = [{"center": e["center"], "gaze": e["gaze"], "radius": g.EYE_RADIUS} for e in g.EYES]
 EYE_LOOK = {"iris": None, "pupil_size": 0.62, "highlight": True}
+
+
+# ---------------------------------------------------------------------------------------------
+# Brick-built version: details must be at least a brick wide to show
+# ---------------------------------------------------------------------------------------------
+
+
+def brick_colors(name, points, normals, col, size):
+    """Adjust per-brick colours so small painted details become clean brick-sized pixels."""
+    col = col.copy()
+    if name == "Body":
+        # three gill stripes on each flank, one brick wide with a brick of blue between them
+        side = np.abs(normals[:, 0]) > 0.7
+        gill_zone = side & (points[:, 1] > -1.45) & (points[:, 1] < -0.05) & (np.abs(points[:, 2] - 3.3) < 0.6)
+        col[gill_zone] = PAL["blue"]
+        for y in (-1.15, -0.75, -0.35):
+            stripe = side & (np.abs(points[:, 1] - y) < size * 0.5) & (np.abs(points[:, 2] - 3.3) < 0.36)
+            col[stripe] = PAL["gill"]
+        col[g._brows(points) < size * 0.45] = PAL["brow"]
+        # the open mouth is one dark colour; the tongue and teeth are their own bricks
+        col[g._mouth(points) < size * 0.3] = PAL["mouth"]
+    elif name.startswith("Sock"):
+        band = np.abs(points[:, 2] - (g.SOCK_TOP - 0.24)) < size * 0.5
+        col[:] = PAL["white"]
+        col[band] = PAL["sock_band"]
+    elif name.startswith("Shoe"):
+        # blue sneaker on a white sole with a dark bottom layer, white laces, navy collar
+        shoe = g.SHOES[int(name[-1])]
+        z = points[:, 2]
+        col[:] = PAL["shoe"]
+        col[z < size * 2] = PAL["white"]
+        col[z < size] = PAL["outsole"]
+        collar = shoe._collar(np.stack(shoe.local(points), axis=-1)) < size * 0.3
+        col[collar & (z >= size * 2)] = PAL["shoe_dark"]
+        u, v, _ = shoe.local(points)
+        top = normals[:, 2] > 0.6
+        laces = top & (np.abs(v) < 0.1) & (u > 0.42) & (u < 0.86) & (z >= size * 2)
+        col[laces] = PAL["white"]
+    return col
+
+
+def brick_eye_colors(eye, centres, size):
+    """Eye bricks: white, with a block of black pupil bricks where the eye looks."""
+    d = centres - eye["center"]
+    d /= np.linalg.norm(d, axis=1, keepdims=True)
+    col = np.tile(PAL["white"], (len(centres), 1))
+    col[d @ eye["gaze"] > 0.9] = srgb("#0b0b10")
+    return col, np.full(len(centres), 0.25)
