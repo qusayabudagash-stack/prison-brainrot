@@ -1,4 +1,5 @@
--- Reusable character pieces built on the Kit: limbs, prison clothing, hats and accessories.
+-- Reusable character pieces built on the Kit: limbs, shoes, tubes, fins and leaves, cups, rings,
+-- hats and accessories.
 
 local Kit = require(script.Parent.Kit)
 
@@ -35,35 +36,6 @@ function Parts.bareArm(k: Kit, rig: string, shoulder: Vector3, hand: Vector3, d:
 	k:limb("Arm", shoulder, hand, d, skin, nil, rig)
 	k:ball("Hand", handD or d * 1.25, hand, skin, nil, rig)
 	k.model:SetAttribute(rig .. "Joint", shoulder)
-end
-
--- Pant legs with cuffs and chunky shoes.
-function Parts.legs(
-	k: Kit,
-	hipY: number,
-	spread: number,
-	legD: number,
-	pants: Color3,
-	shoe: Color3,
-	sole: Color3?,
-	shoeSize: number?,
-	cuff: Color3?
-)
-	for _, side in { -1, 1 } do
-		local hip = v3(side * spread, hipY, 0)
-		local ankle = v3(side * (spread + 0.04), 0.5, 0)
-		k:limb("Leg", hip, ankle, legD, pants, Enum.Material.Fabric, "Legs")
-		k:cylinder(
-			"Cuff",
-			0.18,
-			legD * 1.12,
-			CFrame.new(ankle + v3(0, 0.12, 0)),
-			cuff or pants:Lerp(Color3.new(0, 0, 0), 0.15),
-			Enum.Material.Fabric,
-			"Legs"
-		)
-		k:shoe(ankle, shoeSize or 1, shoe, sole, "Legs")
-	end
 end
 
 export type SneakerColors = {
@@ -158,6 +130,276 @@ function Parts.sneaker(k: Kit, ankle: Vector3, size: number, colors: SneakerColo
 	)
 end
 
+-- A smooth round tube through `points` with a radius at each point (tails, trunks, necks, fuses).
+function Parts.tube(
+	k: Kit,
+	name: string,
+	points: { Vector3 },
+	radii: { number },
+	color: Color3,
+	material: Enum.Material?,
+	rig: string?,
+	options: Kit.LoftOptions?
+): { Part }
+	local sections: { Kit.Section } = {}
+	for i, point in points do
+		table.insert(sections, { at = point, w = radii[i], h = radii[i] })
+	end
+	return k:loft(name, sections, color, material, rig, options)
+end
+
+-- A tapered cone from `base` to `tip` (horns, drills, claws, carrot noses).
+function Parts.cone(
+	k: Kit,
+	name: string,
+	base: Vector3,
+	tip: Vector3,
+	radius: number,
+	color: Color3,
+	material: Enum.Material?,
+	rig: string?
+): { Part }
+	return Parts.tube(
+		k,
+		name,
+		{ base, base:Lerp(tip, 0.5), tip },
+		{ radius, radius * 0.55, radius * 0.08 },
+		color,
+		material,
+		rig,
+		{ density = 0.9, overlap = 6, maxSteps = 2 }
+	)
+end
+
+-- A flat pointed shape from `base` to `tip`: ears, leaves, feathers, fins, flames. `face` is the
+-- direction its flat side faces.
+function Parts.leaf(
+	k: Kit,
+	name: string,
+	base: Vector3,
+	tip: Vector3,
+	width: number,
+	thickness: number,
+	color: Color3,
+	face: Vector3,
+	material: Enum.Material?,
+	rig: string?
+): { Part }
+	local axis = (tip - base).Unit
+	local chord = face:Cross(axis)
+	chord = if chord.Magnitude > 1e-4 then chord.Unit else Vector3.xAxis
+	return k:loft(
+		name,
+		{
+			{ at = base, w = thickness / 2, h = width * 0.42 },
+			{ at = base:Lerp(tip, 0.45), w = thickness * 0.42, h = width * 0.5 },
+			{ at = tip, w = thickness * 0.2, h = width * 0.04 },
+		},
+		color,
+		material,
+		rig,
+		{
+			up = chord,
+			density = 0.8,
+			overlap = 4,
+			minSpacing = math.max(width * 0.22, (tip - base).Magnitude * 0.09),
+			maxSteps = 3,
+		}
+	)
+end
+
+-- A ring (torus) of short limbs lying in the XZ plane of `frame`.
+function Parts.ring(
+	k: Kit,
+	name: string,
+	frame: CFrame,
+	radius: number,
+	thickness: number,
+	color: Color3,
+	material: Enum.Material?,
+	rig: string?,
+	segments: number?
+): { Part }
+	local count = segments or 12
+	local parts = {}
+	for i = 0, count - 1 do
+		local a0, a1 = i * math.pi * 2 / count, (i + 1) * math.pi * 2 / count
+		local p0 = (frame * CFrame.new(math.cos(a0) * radius, 0, math.sin(a0) * radius)).Position
+		local p1 = (frame * CFrame.new(math.cos(a1) * radius, 0, math.sin(a1) * radius)).Position
+		table.insert(parts, k:limb(name, p0, p1, thickness, color, material, rig))
+	end
+	return parts
+end
+
+-- A C-shaped handle from `a` to `b`, bulging `out` (a direction and distance) at its middle.
+function Parts.handle(
+	k: Kit,
+	name: string,
+	a: Vector3,
+	b: Vector3,
+	out: Vector3,
+	thickness: number,
+	color: Color3,
+	material: Enum.Material?,
+	rig: string?
+)
+	local control = (a + b) / 2 + out * 2
+	local previous = a
+	for i = 1, 5 do
+		local t = i / 5
+		local point = a * (1 - t) ^ 2 + control * 2 * t * (1 - t) + b * t * t
+		k:limb(name, previous, point, thickness, color, material, rig)
+		previous = point
+	end
+end
+
+-- A flat sandal: a sole with a toe strap and an ankle strap. `ankle` as for sneakers.
+function Parts.sandal(k: Kit, ankle: Vector3, size: number, sole: Color3, strap: Color3, rig: string?, yaw: number?)
+	local base = CFrame.new(ankle.X, 0, ankle.Z)
+		* CFrame.Angles(0, math.rad(yaw or 0), 0)
+		* CFrame.new(0, 0, -size * 0.2)
+	k:oval(
+		"SandalSole",
+		base * CFrame.new(0, size * 0.07, 0),
+		size * 0.9,
+		size * 1.5,
+		size * 0.14,
+		sole,
+		Enum.Material.Leather,
+		rig
+	)
+	for _, z in { -0.35, 0.12 } do
+		k:ellipsoid(
+			"SandalStrap",
+			v3(size * 0.86, size * 0.3, size * 0.16),
+			base * CFrame.new(0, size * 0.22, size * z),
+			strap,
+			Enum.Material.Leather,
+			rig
+		)
+	end
+end
+
+export type Cup = {
+	center: Vector3,
+	bottom: number,
+	top: number,
+	radius: number,
+}
+
+export type CupStyle = {
+	color: Color3,
+	coffee: Color3?,
+	foam: Color3?,
+	-- Latte art on the foam.
+	heart: boolean?,
+	rig: string?,
+}
+
+-- A coffee cup: straight sides over a rounded bowl, a foot ring, and coffee with foam on top.
+-- `base` is the bottom center of the straight part; returns the wall for placing faces with onCup.
+function Parts.cup(k: Kit, base: Vector3, height: number, radius: number, style: CupStyle): Cup
+	local rig = style.rig or "Body"
+	local wall = k:cylinder("Cup", height, radius * 2, CFrame.new(base + v3(0, height / 2, 0)), style.color, nil, rig)
+	wall.Reflectance = 0.05
+	k:ellipsoid("CupBowl", v3(radius * 2, radius * 1.1, radius * 2), CFrame.new(base), style.color, nil, rig)
+	k:oval(
+		"CupFoot",
+		CFrame.new(base - v3(0, radius * 0.5, 0)),
+		radius * 1.1,
+		radius * 1.1,
+		0.14,
+		style.color,
+		nil,
+		rig
+	)
+	local top = base.Y + height
+	k:oval(
+		"Coffee",
+		CFrame.new(base.X, top + 0.02, base.Z),
+		radius * 2 - 0.16,
+		radius * 2 - 0.16,
+		0.06,
+		style.coffee or rgb(120, 72, 42),
+		nil,
+		rig
+	)
+	k:oval(
+		"Foam",
+		CFrame.new(base.X, top + 0.05, base.Z),
+		radius * 1.55,
+		radius * 1.55,
+		0.06,
+		style.foam or rgb(242, 222, 188),
+		nil,
+		rig
+	)
+	if style.heart then
+		local coffee = style.coffee or rgb(120, 72, 42)
+		for _, side in { -1, 1 } do
+			k:oval(
+				"LatteHeart",
+				CFrame.new(base.X + side * radius * 0.16, top + 0.08, base.Z - radius * 0.1),
+				radius * 0.38,
+				radius * 0.38,
+				0.04,
+				coffee,
+				nil,
+				rig
+			)
+		end
+		local tip = k:part(
+			"LatteHeart",
+			v3(radius * 0.38, 0.04, radius * 0.38),
+			CFrame.new(base.X, top + 0.08, base.Z + radius * 0.14) * CFrame.Angles(0, math.rad(45), 0),
+			coffee,
+			nil,
+			rig
+		)
+		tip.CastShadow = false
+	end
+	return { center = base + v3(0, height / 2, 0), bottom = base.Y, top = top, radius = radius }
+end
+
+-- A CFrame on a cup's wall at `yaw` degrees (0 = front) and height `y`, looking out of the wall.
+function Parts.onCup(cup: Cup, yaw: number, y: number, out: number?): CFrame
+	local angle = math.rad(yaw)
+	local normal = v3(math.sin(angle), 0, -math.cos(angle))
+	local point = v3(cup.center.X, y, cup.center.Z) + normal * (cup.radius + (out or 0))
+	return CFrame.lookAt(point, point + normal)
+end
+
+-- A box with its four edges along X rounded off (a loaf-like profile from the side).
+function Parts.roundedBox(
+	k: Kit,
+	name: string,
+	cframe: CFrame,
+	size: Vector3,
+	radius: number,
+	color: Color3,
+	material: Enum.Material?,
+	rig: string?
+): Part
+	local core = k:part(name, v3(size.X, size.Y - radius * 2, size.Z), cframe, color, material, rig)
+	k:part(name, v3(size.X, size.Y, size.Z - radius * 2), cframe, color, material, rig)
+	for _, y in { -1, 1 } do
+		for _, z in { -1, 1 } do
+			k:cylinder(
+				name,
+				size.X,
+				radius * 2,
+				cframe
+					* CFrame.new(0, y * (size.Y / 2 - radius), z * (size.Z / 2 - radius))
+					* CFrame.Angles(0, 0, math.pi / 2),
+				color,
+				material,
+				rig
+			)
+		end
+	end
+	return core
+end
+
 -- Thin bird legs with three toes.
 function Parts.birdLegs(k: Kit, hipY: number, spread: number, color: Color3)
 	for _, side in { -1, 1 } do
@@ -169,80 +411,6 @@ function Parts.birdLegs(k: Kit, hipY: number, spread: number, color: Color3)
 			k:limb("Toe", ankle, ankle + dir * 0.65 + v3(0, -0.06, 0), 0.2, color, nil, "Legs")
 		end
 		k:limb("Toe", ankle, ankle + v3(0, -0.05, 0.4), 0.18, color, nil, "Legs")
-	end
-end
-
--- Dark prison stripes wrapped around a shell between two heights.
--- `fill` is how much of each stripe period is colored (0.5 = even stripes).
-function Parts.stripes(
-	k: Kit,
-	shell: Kit.Shell,
-	fromY: number,
-	toY: number,
-	count: number,
-	color: Color3?,
-	rig: string?,
-	fill: number?
-)
-	for i = 1, count do
-		local y = fromY + (toY - fromY) * (i - 0.5) / count
-		k:band("Stripe", shell, y, (toY - fromY) / count * (fill or 0.5), color or C.Stripe, Enum.Material.Fabric, rig)
-	end
-end
-
--- Classic black-and-white striped prison cap, sitting on `cframe` (bottom center of the cap).
-function Parts.prisonCap(k: Kit, cframe: CFrame, diameter: number, rig: string?)
-	local h = diameter * 0.42
-	k:cylinder("Cap", h, diameter, cframe * CFrame.new(0, h / 2, 0), C.White, Enum.Material.Fabric, rig)
-	for i = 0, 1 do
-		k:cylinder(
-			"CapStripe",
-			h * 0.22,
-			diameter * 1.02,
-			cframe * CFrame.new(0, h * (0.22 + i * 0.44), 0),
-			C.Stripe,
-			Enum.Material.Fabric,
-			rig
-		)
-	end
-	k:ellipsoid(
-		"CapTop",
-		v3(diameter, h * 0.45, diameter),
-		cframe * CFrame.new(0, h, 0),
-		C.White,
-		Enum.Material.Fabric,
-		rig
-	)
-end
-
--- A knitted beanie with a pom-pom, sitting on `cframe`.
-function Parts.beanie(k: Kit, cframe: CFrame, diameter: number, color: Color3, pom: Color3?, rig: string?)
-	k:ellipsoid(
-		"Beanie",
-		v3(diameter, diameter * 0.75, diameter),
-		cframe * CFrame.new(0, diameter * 0.14, 0),
-		color,
-		Enum.Material.Fabric,
-		rig
-	)
-	k:cylinder(
-		"BeanieRim",
-		diameter * 0.2,
-		diameter * 1.02,
-		cframe * CFrame.new(0, 0.02, 0),
-		color:Lerp(Color3.new(0, 0, 0), 0.2),
-		Enum.Material.Fabric,
-		rig
-	)
-	if pom then
-		k:ball(
-			"Pom",
-			diameter * 0.3,
-			(cframe * CFrame.new(0, diameter * 0.52, 0)).Position,
-			pom,
-			Enum.Material.Fabric,
-			rig
-		)
 	end
 end
 
@@ -321,114 +489,6 @@ function Parts.sunglasses(
 	k:part("ShadesBridge", v3(lensW * 0.6, 0.1, 0.1), bridge, frame or rgb(25, 25, 35), Enum.Material.Metal, rig)
 end
 
--- A gold chain hanging around a body at height y, with a medallion.
-function Parts.goldChain(k: Kit, shell: Kit.Shell, y: number, medallion: string?, rig: string?)
-	k:band("GoldChain", shell, y, 0.16, C.Gold, Enum.Material.Foil, rig)
-	local at =
-		Kit.on(shell, 0, math.deg(math.asin(math.clamp((y - 0.35 - shell.center.Y) / shell.radii.Y, -1, 1))), 0.06)
-	k:disc("Medallion", 0.55, 0.12, at, C.Gold, Enum.Material.Foil, rig)
-	if medallion then
-		k:ellipsoid(
-			"MedallionGem",
-			v3(0.24, 0.24, 0.1),
-			at * CFrame.new(0, 0, -0.07),
-			rgb(40, 200, 120),
-			Enum.Material.Neon,
-			rig
-		)
-	end
-end
-
--- A cape hanging from `top` (the neck, at the back), made of a draped sheet and a fur trim.
-function Parts.cape(k: Kit, top: Vector3, width: number, length: number, color: Color3, trim: Color3?, rig: string?)
-	local sheet = CFrame.new(top + v3(0, -length / 2, 0.25)) * CFrame.Angles(math.rad(-10), 0, 0)
-	k:ellipsoid("Cape", v3(width, length, 0.35), sheet, color, Enum.Material.Fabric, rig)
-	k:part(
-		"CapeHem",
-		v3(width * 0.72, 0.18, 0.3),
-		sheet * CFrame.new(0, -length * 0.44, 0.02),
-		color:Lerp(Color3.new(0, 0, 0), 0.25),
-		Enum.Material.Fabric,
-		rig
-	)
-	if trim then
-		k:ellipsoid(
-			"CapeTrim",
-			v3(width * 0.85, 0.6, 1.1),
-			CFrame.new(top + v3(0, 0.05, 0.1)),
-			trim,
-			Enum.Material.Fabric,
-			rig
-		)
-		for i = -2, 2 do
-			k:ball("TrimSpot", 0.12, top + v3(i * width * 0.14, 0.12, -0.42), rgb(30, 30, 30), nil, rig)
-		end
-	end
-end
-
--- A smooth glowing halo ring, optionally tilted (degrees around Z).
-function Parts.halo(k: Kit, center: Vector3, radius: number, color: Color3?, tilt: number?, rig: string?)
-	local glow = color or rgb(255, 235, 130)
-	local frame = CFrame.new(center) * CFrame.Angles(0, 0, math.rad(tilt or 0))
-	local segments = 14
-	local first: Part? = nil
-	for i = 0, segments - 1 do
-		local a0, a1 = i * math.pi * 2 / segments, (i + 1) * math.pi * 2 / segments
-		local p0 = (frame * CFrame.new(math.cos(a0) * radius, 0, math.sin(a0) * radius)).Position
-		local p1 = (frame * CFrame.new(math.cos(a1) * radius, 0, math.sin(a1) * radius)).Position
-		local part = k:limb("Halo", p0, p1, radius * 0.24, glow, Enum.Material.Neon, rig or "Spin")
-		first = first or part
-	end
-	local light = Instance.new("PointLight")
-	light.Color = glow
-	light.Range = 10
-	light.Brightness = 1.2
-	light.Parent = first
-end
-
--- A feathered wing from `root`, spreading to one side: an arched wing arm with five long feathers
--- hanging from it, longer and brighter toward the tip.
-function Parts.wing(k: Kit, root: Vector3, side: number, span: number, color: Color3, tip: Color3?, rig: string?)
-	local rigName = rig or (if side > 0 then "WingR" else "WingL")
-	local tipColor = tip or color
-	local flat = span * 0.13
-	local elbow = root + v3(side * span * 0.5, span * 0.42, span * 0.12)
-	local wrist = root + v3(side * span * 0.95, span * 0.3, span * 0.2)
-	for _, segment in { { from = root, to = elbow, d = span * 0.34 }, { from = elbow, to = wrist, d = span * 0.26 } } do
-		local part = k:limb("WingArm", segment.from, segment.to, segment.d, color, nil, rigName)
-		part.Size = v3(part.Size.X, part.Size.Y, flat)
-	end
-	for i = 0, 4 do
-		local t = i / 4
-		local anchor = if t < 0.5 then root:Lerp(elbow, 0.35 + t * 1.3) else elbow:Lerp(wrist, (t - 0.5) * 2)
-		local dir = v3(side * (0.15 + t * 0.7), -1, 0.05).Unit
-		local feather = k:limb(
-			"Feather",
-			anchor,
-			anchor + dir * span * (0.5 + t * 0.4),
-			span * 0.24,
-			color:Lerp(tipColor, t),
-			nil,
-			rigName
-		)
-		feather.Size = v3(feather.Size.X, feather.Size.Y, flat * 0.8)
-	end
-	k.model:SetAttribute(rigName .. "Joint", root)
-end
-
--- A tapered horn from `base` along `dir`.
-function Parts.horn(k: Kit, base: Vector3, dir: Vector3, length: number, diameter: number, color: Color3, rig: string?)
-	local mid = base + dir.Unit * length * 0.5
-	local tip = base + dir.Unit * length
-	k:limb("Horn", base, mid, diameter, color, nil, rig)
-	k:limb("HornTip", mid, tip, diameter * 0.55, color, nil, rig)
-end
-
--- A metal handcuff ring around a wrist.
-function Parts.cuff(k: Kit, wrist: Vector3, diameter: number, rig: string?)
-	k:cylinder("Handcuff", diameter * 0.4, diameter * 1.3, CFrame.new(wrist), C.Iron, Enum.Material.Metal, rig)
-end
-
 -- A patch of color hugging a shell (spots, nebulae, pockets). It is made deep enough to follow the
 -- curve, so wide patches don't float off the body at their edges.
 function Parts.patch(
@@ -448,57 +508,6 @@ function Parts.patch(
 	-- A little flatter than the body's curve, so the edges stay just above the surface
 	local depth = math.max(0.12, 0.6 * math.max(w, h) ^ 2 / (2 * r))
 	return k:ellipsoid(name, v3(w, h, depth), Kit.on(shell, yaw, pitch, 0.06 - depth / 2, spin), color, material, rig)
-end
-
--- Tiny glowing stars spread evenly over a shell (a Fibonacci spiral, so every copy looks the same).
--- Stars inside the face area (|yaw| < 50, pitch -30..45) are skipped.
-function Parts.starSpecks(
-	k: Kit,
-	shell: Kit.Shell,
-	count: number,
-	colors: { Color3 },
-	minPitch: number,
-	maxPitch: number,
-	rig: string?
-)
-	local lo, hi = math.sin(math.rad(minPitch)), math.sin(math.rad(maxPitch))
-	for i = 1, count do
-		local yaw = ((i * 137.508) % 360) - 180
-		local pitch = math.deg(math.asin(lo + (hi - lo) * (i - 0.5) / count))
-		if not (math.abs(yaw) < 50 and pitch > -30 and pitch < 45) then
-			local size = 0.09 + (i * 7 % 5) * 0.025
-			k:ball("Star", size, Kit.surface(shell, yaw, pitch), colors[i % #colors + 1], Enum.Material.Neon, rig)
-		end
-	end
-end
-
--- A graduation cap (mortarboard) sitting on `cframe`, with a gold tassel hanging off one corner.
-function Parts.gradCap(k: Kit, cframe: CFrame, size: number, rig: string?)
-	local black = rgb(25, 25, 32)
-	k:cylinder(
-		"CapBase",
-		size * 0.24,
-		size * 0.68,
-		cframe * CFrame.new(0, size * 0.12, 0),
-		black,
-		Enum.Material.Fabric,
-		rig
-	)
-	local board = cframe * CFrame.new(0, size * 0.26, 0) * CFrame.Angles(0, math.rad(45), 0)
-	k:part("CapBoard", v3(size, size * 0.06, size), board, black, Enum.Material.Fabric, rig)
-	local button = (board * CFrame.new(0, size * 0.04, 0)).Position
-	k:ball("CapButton", size * 0.1, button, C.Gold, Enum.Material.Foil, rig)
-	local corner = (board * CFrame.new(size * 0.47, size * 0.03, -size * 0.47)).Position
-	k:limb("TasselCord", button, corner, size * 0.035, C.Gold, nil, rig)
-	k:limb("Tassel", corner, corner - v3(0, size * 0.42, 0), size * 0.09, C.Gold, nil, rig)
-end
-
--- A ground glow ring (used for rare Brainrots).
-function Parts.glowRing(k: Kit, radius: number, color: Color3)
-	local ring = k:cylinder("GlowRing", 0.06, radius * 2, CFrame.new(0, 0.04, 0), color, Enum.Material.Neon)
-	ring.Transparency = 0.55
-	ring.CastShadow = false
-	return ring
 end
 
 return Parts

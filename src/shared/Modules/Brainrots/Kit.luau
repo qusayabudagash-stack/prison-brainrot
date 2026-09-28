@@ -35,6 +35,8 @@ export type LoftOptions = {
 	overlap: number?,
 	-- Never place ellipsoids closer than this (keeps thin tails cheap).
 	minSpacing: number?,
+	-- At most this many ellipsoids between two sections (default 12).
+	maxSteps: number?,
 }
 
 export type EyeOptions = {
@@ -80,13 +82,8 @@ Kit.Colors = {
 	Mouth = MOUTH,
 	Tongue = TONGUE,
 	Blush = BLUSH,
-	Jumpsuit = Color3.fromRGB(250, 125, 35),
-	JumpsuitDark = Color3.fromRGB(215, 95, 25),
-	Stripe = Color3.fromRGB(40, 38, 48),
-	Iron = Color3.fromRGB(70, 72, 82),
 	Gold = Color3.fromRGB(255, 196, 45),
 	GoldDark = Color3.fromRGB(215, 150, 30),
-	Guard = Color3.fromRGB(45, 70, 150),
 	Sole = Color3.fromRGB(235, 232, 225),
 }
 
@@ -367,7 +364,7 @@ function Kit.loft(
 		-- Spacing follows the section's larger radius: that is the outline people see (a fin's
 		-- chord, not its thickness)
 		local radius = (math.max(a.w, a.h) + math.max(b.w, b.h)) / 2
-		local steps = math.max(1, math.ceil(length / math.max(radius * density, minSpacing)))
+		local steps = math.clamp(math.ceil(length / math.max(radius * density, minSpacing)), 1, opts.maxSteps or 12)
 		for step = 0, steps - 1 do
 			local t = step / steps
 			table.insert(samples, {
@@ -402,6 +399,18 @@ function Kit.loft(
 		local cap = math.min(sample.w, sample.h) * 1.8
 		local room = 2 * math.min(along[i], total - along[i]) + cap
 		local length = math.max(math.min(spacing * overlap, room), cap)
+		-- On a bend, a long straight ellipsoid would stick out of the curve: keep its sag within
+		-- about a third of the radius (sag = length^2 / 8R)
+		if i > 1 and i < #samples then
+			local a = (sample.at - samples[i - 1].at).Unit
+			local b = (samples[i + 1].at - sample.at).Unit
+			local bend = math.acos(math.clamp(a:Dot(b), -1, 1))
+			if bend > 1e-3 then
+				local bendRadius = spacing / bend
+				local limit = math.sqrt(2.4 * math.max(sample.w, sample.h) * bendRadius)
+				length = math.max(math.min(length, limit), spacing * 1.6, cap)
+			end
+		end
 		table.insert(
 			parts,
 			self:ellipsoid(name, Vector3.new(sample.w * 2, sample.h * 2, length), cframe, color, material, rig)
@@ -673,35 +682,6 @@ end
 -- Clothing and gear
 ---------------------------------------------------------------------------
 
--- A chunky cartoon shoe. `position` is the ankle point on the ground plane (y = 0).
-function Kit.shoe(self: Kit, position: Vector3, size: number, color: Color3, soleColor: Color3?, rig: string?)
-	local base = CFrame.new(position.X, 0, position.Z - size * 0.18)
-	self:ellipsoid(
-		"Shoe",
-		Vector3.new(size * 0.95, size * 0.62, size * 1.38),
-		base * CFrame.new(0, size * 0.34, 0),
-		color,
-		nil,
-		rig
-	)
-	self:ellipsoid(
-		"Sole",
-		Vector3.new(size * 1.02, size * 0.28, size * 1.46),
-		base * CFrame.new(0, size * 0.1, 0),
-		soleColor or Kit.Colors.Sole,
-		nil,
-		rig
-	)
-	self:ellipsoid(
-		"ToeCap",
-		Vector3.new(size * 0.7, size * 0.36, size * 0.5),
-		base * CFrame.new(0, size * 0.3, -size * 0.52),
-		soleColor or Kit.Colors.Sole,
-		nil,
-		rig
-	)
-end
-
 -- A white chest badge with a prison number printed on it.
 function Kit.badge(self: Kit, cframe: CFrame, text: string, width: number, rig: string?): Part
 	local badge =
@@ -722,38 +702,6 @@ function Kit.badge(self: Kit, cframe: CFrame, text: string, width: number, rig: 
 	label.Text = text
 	label.Parent = gui
 	return badge
-end
-
--- Iron ball and chain attached at `ankle`, resting at `ballAt`.
-function Kit.ballAndChain(self: Kit, ankle: Vector3, ballAt: Vector3, legDiameter: number)
-	self:cylinder(
-		"Shackle",
-		legDiameter * 0.45,
-		legDiameter * 1.18,
-		CFrame.new(ankle),
-		Kit.Colors.Iron,
-		Enum.Material.Metal
-	)
-	local ball = Vector3.new(ballAt.X, 0.62, ballAt.Z)
-	self:ball("IronBall", 1.24, ball, Color3.fromRGB(45, 45, 55), Enum.Material.Metal)
-	self:ball(
-		"BallShine",
-		0.3,
-		ball + Vector3.new(-0.22, 0.34, -0.36),
-		Color3.fromRGB(140, 140, 160),
-		Enum.Material.Metal
-	)
-	local links = 4
-	local from = ankle + (ball - ankle).Unit * legDiameter * 0.55
-	local to = ball + (ankle - ball).Unit * 0.6
-	for i = 1, links do
-		local t = (i - 0.5) / links
-		local point = from:Lerp(to, t) + Vector3.new(0, -math.sin(t * math.pi) * 0.25, 0)
-		local turn = if i % 2 == 0 then math.pi / 2 else 0
-		local along = (to - from).Unit
-		local cframe = CFrame.lookAt(point, point + along) * CFrame.Angles(0, 0, turn)
-		self:part("ChainLink", Vector3.new(0.12, 0.3, 0.42), cframe, Kit.Colors.Iron, Enum.Material.Metal)
-	end
 end
 
 return Kit

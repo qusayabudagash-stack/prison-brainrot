@@ -15,10 +15,13 @@ there are no assets to upload. The project is synced into Roblox Studio with [Ro
   get bigger with rarity. The machine itself pulls its lever, goes rainbow and flashes the rarity color
   for everyone nearby. Mythic finds and above are announced to the server; the Secret Brainrot flashes a
   rainbow across everyone's screen.
-- **32 hand-designed Brainrots** across 8 rarities (Common → Uncommon → Rare → Epic → Legendary →
-  Mythic → Divine → Secret), each its own character built from parts, with idle animation (bobbing,
-  waving, flapping, orbiting bits). Rarer tiers add sparkles, a glow pad, an aura, orbiting orbs, a light
-  burst and, for the Secret, rainbow everything.
+- **32 Italian Brainrot characters** across 8 rarities (Common → Uncommon → Rare → Epic → Legendary →
+  Mythic → Divine → Secret): Tim Cheese, Lirilì Larilà, Boneca Ambalabu, Brr Brr Patapim, Chimpanzini
+  Bananini, Cappuccino Assassino, Ballerina Cappuccina, Tung Tung Tung Sahur, Bombardiro Crocodilo,
+  Tralalero Tralala, La Vaca Saturno Saturnita and more. They are original 3D interpretations of the meme
+  characters, sculpted from smooth lofted shapes (no ripped assets), with idle animation. Rarity shows in
+  the model itself: rarer Brainrots are bigger, more detailed and use richer materials, with only light
+  sparkles and auras on top.
 - **Luck** (upgrades, rebirths, achievements, Golden/Diamond discoveries, a free timed boost, events),
   capped so rare stays rare. **Pity** ("LUCKY ROLLS"): 2x Legendary+ after 50 rolls, 4x after 100,
   guaranteed at 150.
@@ -120,8 +123,9 @@ src/shared/Modules     -> ReplicatedStorage.Modules       shared data and logic
   RollSystem             odds, luck, pity and rolling math
   Formulas               income, capacity, luck and costs
   BrainrotModel          builds a Brainrot from its design, adds rarity and variant effects
-  Brainrots/             the character designs: Kit (shapes, faces, eyes, mouths), Parts (limbs,
-                         clothes, hats, wings), one module per rarity, and Effects (rarity FX)
+  Brainrots/             the character designs: Kit (shapes, smooth lofts, faces, teeth), Parts
+                         (sneakers, tubes, fins, cups, rings, props), one module per rarity, and
+                         Effects (light rarity FX)
   MapLayout              where every room is, and the lighting mood of each zone
   Events, Format, Net, Signal, Types
 src/server             -> ServerScriptService
@@ -150,8 +154,10 @@ The map is built by `MapService` into `Workspace.Lobby`, `Prison`, `CellBlocks`,
 - **Lighting per room**: `Moods` in `Modules/MapLayout.luau` (the base effects are in
   `default.project.json` under Lighting).
 - **A Brainrot's design**: its function in `Modules/Brainrots/<Rarity>.luau`. Designs face -Z with
-  their feet on y = 0 and tag parts with a rig group (Body, ArmL/ArmR, WingL/WingR, Orbit, Spin) so the
-  client animates them. A Brainrot needs a design to be built.
+  their feet on y = 0 and tag parts with a rig group (Body, ArmL/ArmR, WingL/WingR, Orbit, Legs) so the
+  client animates them. `Kit.loft` builds smooth tapered bodies, tails and fins from a list of sections.
+  Brainrot ids that were renamed are listed in `BrainrotData.LegacyIds`, and old saves are migrated on
+  load.
 
 ## Tuning
 

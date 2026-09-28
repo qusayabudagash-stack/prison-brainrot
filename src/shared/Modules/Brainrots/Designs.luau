@@ -23,13 +23,4 @@ do
 	end
 end
 
--- TEMPORARY while the roster is being rebuilt: a renamed Brainrot without its own design yet
--- borrows the design of the id it replaced.
-local BrainrotData = require(script.Parent.Parent.BrainrotData)
-for oldId, newId in BrainrotData.LegacyIds do
-	if not Designs[newId] then
-		Designs[newId] = Designs[oldId]
-	end
-end
-
 return Designs
