@@ -42,16 +42,27 @@ there are no assets to upload. The project is synced into Roblox Studio with [Ro
 
 ## The prison
 
-- **Main hall (Cell Block 1)**: the intake with the front doors, benches, vending machines, the
-  founder's golden statue and the leaderboards; a security checkpoint with metal detectors, an X-ray belt
-  and the guard desk under the big title sign; the first roll machine on a stage under a skylight.
+The art direction is a stylized, colorful modern prison: cream plaster walls over a teal painted band
+with a yellow stripe, charcoal pilasters, beams and frames, tiled floors and dark ceilings. Strong
+colors are saved for what you can use (machines, stations, doors, signs) so the Brainrots stay the stars.
+
+- **Main hall (Cell Block 1)**: the intake with the front doors, benches, vending machines, the golden
+  founder's statue, a trophy case and the leaderboards; a security checkpoint with metal detectors, an
+  X-ray belt and the guard desk under the big title sign; then a tiled runner through a colonnade of
+  rarity banners (rarer as you get closer) to the hero roll machine on its stage under a skylight.
+  Balconies with glass rails run along both walls, with clerestory windows above them.
+- **The Brainrot Roller**: a big gacha machine on a stepped stage ringed with the rarity colors, a glass
+  dome where the block's featured Brainrot turns among prize capsules, a side crank, glowing feed pipes,
+  a coin-slot console with the ROLL button and an arch marquee. Every block has its own paint job.
 - **Stations** are real objects: the commissary window (Shop), the workshop bench (Upgrades), the
-  Brainrot Book on its lectern, the parole board door (Rebirth), the Luck-O-Mat (free luck) and the
-  mailroom care package (daily roll).
-- **Cell Block A**: the player cells in two rows with catwalks and an upper tier.
-- **Mess hall**: serving line, kitchen, tables with trays, a menu nobody trusts.
-- **The yard**: basketball court, outdoor gym, potato garden, watch towers. The Prison King event holds
-  court here and escaped Brainrots roam the lawn.
+  Brainrot Book on its lectern, the Freedom Gate portal of the parole board (Rebirth), the Luck-O-Mat
+  (free luck) and the mailroom care package (daily roll).
+- **Cell Block A**: the player cells in two rows with catwalks and an upper tier. Each cell has its own
+  color, a painted door frame, furniture and three lit plinths showing its owner's best Brainrots.
+- **Mess hall**: a warm retro cafeteria with a checkerboard floor, serving line and kitchen.
+- **The yard**: paving with terracotta paths, planters with trees, a basketball court with bleachers, an
+  outdoor gym, picnic tables under umbrellas, the inmates' garden and watch towers. The Prison King
+  event holds court here and escaped Brainrots roam the paving.
 - **The blocks** you unlock each have their own look: Cell Block 2 (blue, two-tier cells), Maximum
   Security (plating, solitary, a caged machine, alarms), Death Row (flickering lights, the Electric
   Throne), the Alien Block (crashed UFO, specimen tanks) and the Secret Block (starfield floor, portal).
