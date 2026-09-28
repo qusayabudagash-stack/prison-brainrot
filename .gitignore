@@ -1,4 +1,5 @@
-# Places built with `rojo build`, plus Studio lock files
+# Places built with `rojo build` (tests build into build/), plus Studio lock files
+build/
 *.rbxl
 *.rbxlx
 *.rbxl.lock
