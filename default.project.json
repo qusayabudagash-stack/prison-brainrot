@@ -34,7 +34,7 @@
 				"$className": "Part",
 				"$properties": {
 					"Anchored": true,
-					"Color": [0.431, 0.776, 0.388],
+					"Color": [0.39, 0.498, 0.302],
 					"Locked": true,
 					"Material": "Grass",
 					"CFrame": {
