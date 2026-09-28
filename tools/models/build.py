@@ -34,9 +34,14 @@ VIEWS = {
     "side": {"azimuth": 90, "elevation": 5, "size": (1600, 1200), "lens": 70, "fill": 0.86},
     "back": {"azimuth": 150, "elevation": 14, "size": (1600, 1200), "lens": 70, "fill": 0.86},
     "thumbnail": {"azimuth": 30, "elevation": 12, "size": (1024, 1024), "lens": 85, "fill": 0.93},
-    "face": {"azimuth": 28, "elevation": 8, "size": (1200, 900), "lens": 85, "fill": 0.9, "focus": ((-1.6, -3.7, 2.1), (1.6, -1.6, 4.4))},
+    "face": {"azimuth": 28, "elevation": 8, "size": (1200, 900), "lens": 85, "fill": 0.9, "focus": ((-1.9, -3.2, 2.0), (1.9, -1.2, 5.3))},
     "shoes": {"azimuth": 30, "elevation": 14, "size": (1200, 900), "lens": 85, "fill": 0.9, "focus": ((-1.6, -2.4, -0.1), (1.6, 1.4, 1.2))},
     "scale": {"azimuth": 24, "elevation": 6, "size": (1600, 1000), "lens": 100, "fill": 0.86, "avatar": True},
+    # a Roblox gameplay camera: 70 degree vertical field of view, ~24 studs away, looking down a little
+    "gameplay": {"azimuth": 28, "elevation": 16, "size": (1280, 720), "fov": 70, "distance": 20, "avatar": True, "game": True},
+    # pure black shape on white: does the outline alone read as a shark on three legs in sneakers?
+    "silhouette": {"azimuth": 38, "elevation": 11, "size": (800, 600), "lens": 70, "fill": 0.86, "silhouette": True},
+    "silhouette_side": {"azimuth": 90, "elevation": 5, "size": (800, 600), "lens": 70, "fill": 0.86, "silhouette": True},
 }
 
 
@@ -100,10 +105,10 @@ def uv_sphere(radius, segments=96, rings=48):
     return verts, faces[:, ::-1], verts / radius
 
 
-def add_eyes(look, root):
+def add_eyes(look, root, game=False):
     mat = scene.eye_material("Eye", **look.EYE_LOOK)
     for i, eye in enumerate(look.EYES):
-        verts, faces, normals = uv_sphere(eye["radius"])
+        verts, faces, normals = uv_sphere(eye["radius"], *((32, 16) if game else (96, 48)))
         obj = scene.mesh_object(f"Eye{i}", verts, faces, vertex_normals=normals, material=mat, parent=root)
         obj.location = tuple(eye["center"])
         gaze = eye["gaze"]
@@ -212,7 +217,9 @@ def main():
     parser.add_argument("--samples", type=int, default=None)
     parser.add_argument("--scale", type=float, default=None, help="resolution multiplier")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--skip", default="", help="comma-separated part names to leave out (debugging)")
     parser.add_argument("--decimate", type=int, default=None, help="preview at a game budget: total triangles")
+    parser.add_argument("--game", action="store_true", help="render the in-game meshes: each part cut to its budget")
     args = parser.parse_args()
 
     geometry = importlib.import_module(args.character)
@@ -223,7 +230,8 @@ def main():
 
     t0 = time.time()
     meshes = []
-    for part in look.PARTS:
+    skip = set(filter(None, args.skip.split(",")))
+    for part in [p for p in look.PARTS if p["name"] not in skip]:
         verts, faces, normals = build_part(part, geometry_hash, args.quality, args.force)
         meshes.append((part, verts, faces, normals))
     print(f"meshes ready in {time.time() - t0:.1f}s, {sum(len(m[2]) for m in meshes):,} tris", flush=True)
@@ -242,11 +250,17 @@ def main():
         root = scene.empty("Character")
         mat = surface_material()
         total = sum(len(p[2]) for p in painted)
+        tris = {}
         for part, verts, faces, normals, col, attrs in painted:
             obj = scene.mesh_object(part["name"], verts, faces, vertex_normals=normals, colors=col, attributes=attrs, material=mat, parent=root)
-            if args.decimate:
+            if args.game:
+                tris[part["name"]] = scene.decimate(obj, part["budget"] / len(faces), sharp_angle=part.get("sharp", 50))
+            elif args.decimate:
                 scene.decimate(obj, args.decimate / total)
-        add_eyes(look, root)
+        add_eyes(look, root, game=args.game)
+        if tris and name == args.views.split(",")[0]:
+            eyes = 2 * (32 * 2 + 32 * 14 * 2)
+            print("game triangles:", ", ".join(f"{k} {v:,}" for k, v in tris.items()), f"+ eyes {eyes:,}", f"= {sum(tris.values()) + eyes:,}", flush=True)
         points = all_points
         if view.get("avatar"):
             # side by side at the same depth from the camera, both facing it, so sizes compare fairly
@@ -262,17 +276,34 @@ def main():
         plo, phi = points.min(axis=0), points.max(axis=0)
         target = (plo + phi) / 2
         radius = float(np.linalg.norm(phi - plo) / 2)
-        studio(view["azimuth"], target, radius)
+        if view.get("distance"):
+            # frame the pair from the character's height, like a player standing nearby
+            target = np.array([target[0], target[1], 2.5])
+            radius = 6.0
+        if view.get("game"):
+            scene.game_environment(sun_azimuth=view["azimuth"] - 35)
+        else:
+            studio(view["azimuth"], target, radius)
         w, h = view["size"]
         if args.scale:
             w, h = int(w * args.scale), int(h * args.scale)
-        cam = scene.camera(lens=view["lens"])
-        dist = scene.fit_distance(points, target, view["azimuth"], view["elevation"], view["lens"], w / h, view["fill"])
+        if view.get("fov"):
+            cam = scene.camera()
+            cam.data.sensor_fit = "VERTICAL"
+            cam.data.angle = math.radians(view["fov"])
+        else:
+            cam = scene.camera(lens=view["lens"])
+        if view.get("distance"):
+            dist = view["distance"]
+        else:
+            dist = scene.fit_distance(points, target, view["azimuth"], view["elevation"], view["lens"], w / h, view["fill"])
         scene.frame(cam, target, view["azimuth"], view["elevation"], dist)
         samples = args.samples or (24 if args.quality == "preview" else 160)
         scene.setup_render(w, h, samples=samples)
+        if view.get("silhouette"):
+            scene.silhouette()
         t1 = time.time()
-        suffix = f"_{args.decimate // 1000}k" if args.decimate else ""
+        suffix = "_game" if args.game else (f"_{args.decimate // 1000}k" if args.decimate else "")
         path = out / f"{geometry.ID}_{name}{suffix}.png"
         scene.render(path)
         print(f"rendered {path.name} in {time.time() - t1:.1f}s", flush=True)

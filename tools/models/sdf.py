@@ -206,9 +206,11 @@ class Loft:
     rows should have zero size to close the ends. The sizes are interpolated with C2 cubic
     splines of their squares (which rounds the tips), so the surface has no creases or bands.
     Sections may be offset sideways with a centre_x column: rows (y, centre_z, hw, hh, centre_x).
+    `exponent` above 2 squares the sections off into rounded boxes (a chunkier, toy-like body).
     """
 
-    def __init__(self, sections):
+    def __init__(self, sections, exponent=2.0):
+        self.exponent = exponent
         from scipy.interpolate import CubicSpline
 
         rows = np.asarray(sections, dtype=np.float64)
@@ -233,7 +235,8 @@ class Loft:
     def __call__(self, p):
         x, y, z = p[..., 0], p[..., 1], p[..., 2]
         cx, cz, w, h = self.section(y)
-        k0 = np.sqrt(((x - cx) / w) ** 2 + ((z - cz) / h) ** 2)
+        n = self.exponent
+        k0 = (np.abs((x - cx) / w) ** n + np.abs((z - cz) / h) ** n) ** (1.0 / n)
         d = (k0 - 1.0) * np.minimum(w, h)
         before = y < self.y0
         after = y > self.y1
@@ -366,7 +369,9 @@ def mesh(fn, lo, hi, step, coarse=4):
     """
     from scipy.ndimage import zoom
 
-    lo = np.asarray(lo, dtype=np.float64)
+    # offset the grid by an odd fraction of a cell so flat faces never sit exactly on grid planes
+    # (marching cubes makes degenerate, flipped triangles there)
+    lo = np.asarray(lo, dtype=np.float64) - step * np.array([0.371, 0.293, 0.417])
     hi = np.asarray(hi, dtype=np.float64)
     cstep = step * coarse
     ccounts = np.ceil((hi - lo) / cstep).astype(int) + 1
@@ -378,7 +383,8 @@ def mesh(fn, lo, hi, step, coarse=4):
     counts = (ccounts - 1) * coarse + 1
     vol = zoom(cvol, [(counts[i]) / ccounts[i] for i in range(3)], order=1, grid_mode=False)
     vol = vol[: counts[0], : counts[1], : counts[2]]
-    band = cstep * 1.6
+    # thin features (lips, fin edges) can hide between coarse samples, so keep the band generous
+    band = cstep * 3.0
     idx = np.argwhere(np.abs(vol) < band)
     pts = lo + idx * step
     vol[idx[:, 0], idx[:, 1], idx[:, 2]] = evaluate(fn, pts)

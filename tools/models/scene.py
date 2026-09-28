@@ -81,8 +81,12 @@ def mesh_object(name, verts, faces, vertex_normals=None, colors=None, attributes
     return obj
 
 
-def decimate(obj, ratio):
-    """Collapse-decimate `obj` in place (keeps paint attributes), returning its triangle count."""
+def decimate(obj, ratio, sharp_angle=None):
+    """Collapse-decimate `obj` in place (keeps paint attributes), returning its triangle count.
+
+    With `sharp_angle` (degrees), edges folding more than that are shaded hard, like a game asset
+    with smoothing groups: crisp bevels on fins, soles and teeth, smooth rounded forms elsewhere.
+    """
     me = obj.data
     if me.has_custom_normals:
         bpy.context.view_layer.objects.active = obj
@@ -98,6 +102,8 @@ def decimate(obj, ratio):
     obj.modifiers.clear()
     obj.data = new
     new.polygons.foreach_set("use_smooth", np.ones(len(new.polygons), dtype=bool))
+    if sharp_angle is not None:
+        new.set_sharp_from_angle(angle=math.radians(sharp_angle))
     return len(new.polygons)
 
 
@@ -149,38 +155,45 @@ def material(name, color=None, roughness=0.5, coat=0.0, coat_roughness=0.08, sub
     return mat
 
 
-def eye_material(name, iris="#3a2a1c", iris_edge="#140c07", pupil_size=0.42, iris_size=0.72):
-    """A glossy eyeball whose iris and pupil face the object's local +Z axis."""
+def eye_material(name, iris="#3a2a1c", iris_edge="#140c07", pupil_size=0.42, iris_size=0.72, highlight=False):
+    """A glossy eyeball whose pupil (and optional iris) faces the object's local +Z axis.
+
+    `iris=None` gives a toy eye: white with a black pupil. `highlight` paints a catchlight dot
+    up and to the left of the pupil (local -X, +Y), so it reads even in flat lighting.
+    """
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
     bsdf = nodes["Principled BSDF"]
-    bsdf.inputs["Roughness"].default_value = 0.12
-    bsdf.inputs["Coat Weight"].default_value = 1.0
-    bsdf.inputs["Coat Roughness"].default_value = 0.02
+    bsdf.inputs["Roughness"].default_value = 0.15
+    bsdf.inputs["Coat Weight"].default_value = 0.6
+    bsdf.inputs["Coat Roughness"].default_value = 0.05
     coords = nodes.new("ShaderNodeTexCoord")
-    sep = nodes.new("ShaderNodeSeparateXYZ")
     norm = nodes.new("ShaderNodeVectorMath")
     norm.operation = "NORMALIZE"
     links.new(coords.outputs["Object"], norm.inputs[0])
+    sep = nodes.new("ShaderNodeSeparateXYZ")
     links.new(norm.outputs["Vector"], sep.inputs[0])
     # cos(angle from the gaze axis) -> sclera / iris / pupil
     ramp = nodes.new("ShaderNodeValToRGB")
     cr = ramp.color_ramp
     cr.interpolation = "LINEAR"
-    cos_iris = math.cos(math.asin(iris_size * 0.62))
     cos_pupil = math.cos(math.asin(pupil_size * 0.62))
-    stops = [
-        (0.0, "#f4f1ea"),
-        (cos_iris - 0.02, "#ebe6dc"),
-        (cos_iris - 0.004, "#1c120c"),
-        (cos_iris + 0.004, iris_edge),
-        (cos_iris + (cos_pupil - cos_iris) * 0.55, iris),
-        (cos_pupil - 0.004, iris),
-        (cos_pupil + 0.002, "#050404"),
-        (1.0, "#050404"),
-    ]
+    if iris is None:
+        stops = [(0.0, "#fbfaf6"), (cos_pupil - 0.004, "#fbfaf6"), (cos_pupil + 0.004, "#0b0b10"), (1.0, "#0b0b10")]
+    else:
+        cos_iris = math.cos(math.asin(iris_size * 0.62))
+        stops = [
+            (0.0, "#f4f1ea"),
+            (cos_iris - 0.02, "#ebe6dc"),
+            (cos_iris - 0.004, "#1c120c"),
+            (cos_iris + 0.004, iris_edge),
+            (cos_iris + (cos_pupil - cos_iris) * 0.55, iris),
+            (cos_pupil - 0.004, iris),
+            (cos_pupil + 0.002, "#050404"),
+            (1.0, "#050404"),
+        ]
     cr.elements[0].position = stops[0][0]
     cr.elements[0].color = (*srgb(stops[0][1]), 1)
     cr.elements[1].position = stops[-1][0]
@@ -189,7 +202,25 @@ def eye_material(name, iris="#3a2a1c", iris_edge="#140c07", pupil_size=0.42, iri
         el = cr.elements.new(max(0.0, min(1.0, pos)))
         el.color = (*srgb(col), 1)
     links.new(sep.outputs["Z"], ramp.inputs["Fac"])
-    links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
+    color_out = ramp.outputs["Color"]
+    if highlight:
+        spot = nodes.new("ShaderNodeVectorMath")
+        spot.operation = "DISTANCE"
+        spot.inputs[1].default_value = tuple(np.array([-0.3, 0.32, 0.9]) / np.linalg.norm([-0.3, 0.32, 0.9]))
+        links.new(norm.outputs["Vector"], spot.inputs[0])
+        mask = nodes.new("ShaderNodeMapRange")
+        mask.inputs["From Min"].default_value = 0.2
+        mask.inputs["From Max"].default_value = 0.17
+        links.new(spot.outputs["Value"], mask.inputs["Value"])
+        mix_node = nodes.new("ShaderNodeMix")
+        mix_node.data_type = "RGBA"
+        links.new(mask.outputs["Result"], mix_node.inputs["Factor"])
+        links.new(color_out, mix_node.inputs[6])
+        mix_node.inputs[7].default_value = (1, 1, 1, 1)
+        color_out = mix_node.outputs[2]
+        bsdf.inputs["Emission Color"].default_value = (1, 1, 1, 1)
+        links.new(mask.outputs["Result"], bsdf.inputs["Emission Strength"])
+    links.new(color_out, bsdf.inputs["Base Color"])
     return mat
 
 
@@ -220,6 +251,36 @@ def cyclorama(color="#e8dfd3", radius=7.0, depth=14.0, width=80.0, height=40.0, 
             faces.append((a, b + 1, b))
     mat = material(name + "Mat", color=color, roughness=0.9, specular=0.2)
     return mesh_object(name, np.array(verts), np.array(faces)[:, ::-1], material=mat)
+
+
+def game_environment(ground="#7cc05a", ground_alt="#74b653", sky="#a8d8ff", sun_azimuth=-40.0):
+    """A simple Roblox-like place: a big grass baseplate with 4-stud tiles, sky and a sun."""
+    half = 150.0
+    verts = np.array([(-half, -half, 0), (half, -half, 0), (half, half, 0), (-half, half, 0)])
+    mat = bpy.data.materials.new("Ground")
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    bsdf = nodes["Principled BSDF"]
+    bsdf.inputs["Roughness"].default_value = 0.9
+    checker = nodes.new("ShaderNodeTexChecker")
+    checker.inputs["Color1"].default_value = (*srgb(ground), 1)
+    checker.inputs["Color2"].default_value = (*srgb(ground_alt), 1)
+    checker.inputs["Scale"].default_value = 2 * half / 4.0
+    coords = nodes.new("ShaderNodeTexCoord")
+    mat.node_tree.links.new(coords.outputs["UV"], checker.inputs["Vector"])
+    mat.node_tree.links.new(checker.outputs["Color"], bsdf.inputs["Base Color"])
+    obj = mesh_object("Ground", verts, np.array([(0, 1, 2), (0, 2, 3)]), material=mat)
+    uv = obj.data.uv_layers.new(name="UV")
+    corners = {0: (0, 0), 1: (1, 0), 2: (1, 1), 3: (0, 1)}
+    for loop in obj.data.loops:
+        uv.data[loop.index].uv = corners[loop.vertex_index]
+    sun = bpy.data.lights.new("Sun", "SUN")
+    sun.energy = 3.2
+    sun.angle = math.radians(3)
+    sun_obj = bpy.data.objects.new("Sun", sun)
+    bpy.context.scene.collection.objects.link(sun_obj)
+    sun_obj.rotation_euler = (math.radians(45), 0, math.radians(sun_azimuth))
+    world(sky, strength=1.0)
 
 
 def area_light(name, location, target, power, size, color="#ffffff", size_y=None):
@@ -285,7 +346,7 @@ def fit_distance(points, target, azimuth, elevation, lens, aspect, fill=0.82, se
     return best
 
 
-def setup_render(width, height, samples=128, exposure=0.0):
+def setup_render(width, height, samples=128, exposure=0.0, look="AgX - Punchy"):
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"
     scene.cycles.device = "CPU"
@@ -307,7 +368,7 @@ def setup_render(width, height, samples=128, exposure=0.0):
     scene.render.image_settings.color_mode = "RGB"
     scene.view_settings.view_transform = "AgX"
     try:
-        scene.view_settings.look = "AgX - Medium High Contrast"
+        scene.view_settings.look = look
     except TypeError:
         pass
     scene.view_settings.exposure = exposure
@@ -321,6 +382,27 @@ def world(color="#d9dce3", strength=0.35):
     bg.inputs["Color"].default_value = (*srgb(color), 1)
     bg.inputs["Strength"].default_value = strength
     bpy.context.scene.world = w
+
+
+def silhouette():
+    """Turn the current scene into a black shape on white: no backdrop, lights or shading."""
+    black = bpy.data.materials.new("Silhouette")
+    black.use_nodes = True
+    nodes = black.node_tree.nodes
+    nodes.clear()
+    out = nodes.new("ShaderNodeOutputMaterial")
+    emit = nodes.new("ShaderNodeEmission")
+    emit.inputs["Color"].default_value = (0, 0, 0, 1)
+    black.node_tree.links.new(emit.outputs["Emission"], out.inputs["Surface"])
+    for obj in bpy.context.scene.objects:
+        if obj.type == "MESH" and obj.name.startswith("Cyclorama"):
+            obj.hide_render = True
+    bpy.context.view_layer.material_override = black
+    world("#ffffff", strength=1.0)
+    scene = bpy.context.scene
+    scene.view_settings.view_transform = "Standard"
+    scene.view_settings.look = "None"
+    scene.cycles.samples = 16
 
 
 def render(path):
