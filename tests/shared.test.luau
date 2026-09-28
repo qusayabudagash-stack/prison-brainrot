@@ -5,9 +5,6 @@
 
 local fs = require("@lune/fs")
 local process = require("@lune/process")
-local roblox = require("@lune/roblox")
-
-local Instance, Vector3, CFrame = roblox.Instance, roblox.Vector3, roblox.CFrame
 
 local Engine = require("./engine")
 local T = require("./testing")
@@ -16,8 +13,6 @@ local engine = Engine.new(fs.readFile(process.args[1] or "build/test.rbxl"))
 local Modules = engine.ReplicatedStorage.Modules
 local AreaData = engine:require(Modules.AreaData)
 local BrainrotData = engine:require(Modules.BrainrotData)
-local BrainrotAssetIds = engine:require(Modules.BrainrotAssetIds)
-local BrainrotAssets = engine:require(Modules.BrainrotAssets)
 local BrainrotModel = engine:require(Modules.BrainrotModel)
 local Format = engine:require(Modules.Format)
 local Formulas = engine:require(Modules.Formulas)
@@ -81,8 +76,8 @@ T.run(function()
 		incomeOrdered = incomeOrdered and highMin > lowMax
 	end
 	check("every rarity earns more than the one below", incomeOrdered)
-	check("Tim Cheese earns $5/sec", BrainrotData.ById.TimCheese.income == 5)
-	check("Ballerina Cappuccina earns $1,000/sec", BrainrotData.ById.BallerinaCappuccina.income == 1000)
+	check("Potato Prisoner earns $5/sec", BrainrotData.ById.PotatoPrisoner.income == 5)
+	check("Prison King earns $1,000/sec", BrainrotData.ById.PrisonKing.income == 1000)
 
 	---------------------------------------------------------------------------
 	section("Odds, luck and pity")
@@ -204,8 +199,8 @@ T.run(function()
 	---------------------------------------------------------------------------
 	local data = {
 		brainrots = {
-			TimCheese = { Normal = 20, Golden = 1, Diamond = 0 },
-			BallerinaCappuccina = { Normal = 1, Golden = 0, Diamond = 0 },
+			PotatoPrisoner = { Normal = 20, Golden = 1, Diamond = 0 },
+			PrisonKing = { Normal = 1, Golden = 0, Diamond = 0 },
 		},
 		upgrades = { Income = 0, Luck = 0, Discount = 0, Capacity = 0, Speed = 0 },
 		discovered = {},
@@ -217,7 +212,7 @@ T.run(function()
 	}
 	check("capacity starts at 8", Formulas.capacity(data) == 8)
 	check(
-		"only the best 8 earn: Ballerina + Golden Tim Cheese + 6 Tim Cheeses",
+		"only the best 8 earn: King + Golden Potato + 6 Potatoes",
 		Formulas.baseIncome(data) == 1000 + 10 + 6 * 5,
 		Formulas.baseIncome(data)
 	)
@@ -244,18 +239,7 @@ T.run(function()
 	---------------------------------------------------------------------------
 	section("Brainrot models")
 	---------------------------------------------------------------------------
-	-- Rarer Brainrots get more detail, but even the fanciest has to stay cheap to show in every cell.
-	local BUDGET = {
-		Common = 100,
-		Uncommon = 110,
-		Rare = 120,
-		Epic = 135,
-		Legendary = 150,
-		Mythic = 165,
-		Divine = 190,
-		Secret = 210,
-	}
-	local built, maxParts, problems, overBudget = 0, 0, {}, {}
+	local built, maxParts, problems = 0, 0, {}
 	for _, brainrot in BrainrotData.Brainrots do
 		for _, variant in BrainrotData.Variants do
 			for _, options in { { variant = variant.id }, { variant = variant.id, welded = true, scale = 2.5 } } do
@@ -282,9 +266,6 @@ T.run(function()
 					end
 				end
 				maxParts = math.max(maxParts, parts)
-				if variant.id == "Normal" and not options.welded and parts > BUDGET[brainrot.rarity] then
-					table.insert(overBudget, `{brainrot.id} {parts}/{BUDGET[brainrot.rarity]}`)
-				end
 				if not model.PrimaryPart or not model:FindFirstChild("Body") then
 					table.insert(problems, `{brainrot.id}: missing Root or Body`)
 				end
@@ -293,101 +274,6 @@ T.run(function()
 	end
 	print(`  (built {built} models, biggest has {maxParts} parts)`)
 	check("every Brainrot builds in every variant", #problems == 0, table.concat(problems, "; "))
-	check("models stay within their rarity's part budget", #overBudget == 0, table.concat(overBudget, ", "))
-
-	-- A model dropped into ReplicatedStorage.BrainrotAssets replaces the built-in design
-	local assets = Instance.new("Folder")
-	assets.Name = "BrainrotAssets"
-	local asset = Instance.new("Model")
-	asset.Name = "TimCheese"
-	local mesh = Instance.new("Part")
-	mesh.Name = "Body"
-	mesh.Size = Vector3.new(2, 3, 2)
-	mesh.CFrame = CFrame.new(10, 20, 30)
-	mesh.CanCollide = true
-	mesh.Parent = asset
-	asset.Parent = assets
-	assets.Parent = engine.ReplicatedStorage
-	local custom = BrainrotModel.build("TimCheese")
-	local customBody = custom:FindFirstChild("Body") :: BasePart
-	local designHeight = BrainrotModel.designHeight("TimCheese")
-	check("an asset override replaces the design", customBody ~= nil and custom:FindFirstChild("Cheese") == nil)
-	check(
-		"the override is resized to the built-in design's height, keeping its proportions",
-		customBody ~= nil
-			and math.abs(customBody.Size.Y - designHeight) < 0.01
-			and math.abs(customBody.Size.X / customBody.Size.Y - 2 / 3) < 0.001
-	)
-	check(
-		"the override stands on the ground, centered, and doesn't collide",
-		customBody ~= nil
-			and math.abs(customBody.CFrame.Position.Y - designHeight / 2) < 0.01
-			and math.abs(customBody.CFrame.Position.X) < 0.01
-			and not customBody.CanCollide
-	)
-	asset:Destroy()
-
-	-- FacingYaw turns an override: a model long along X ends up long along Z
-	local turned = Instance.new("Model")
-	turned.Name = "TimCheese"
-	turned:SetAttribute("FacingYaw", 90)
-	local plank = Instance.new("Part")
-	plank.Name = "Body"
-	plank.Size = Vector3.new(6, 1, 1)
-	plank.Parent = turned
-	turned.Parent = assets
-	local turnedBody = BrainrotModel.build("TimCheese"):FindFirstChild("Body") :: BasePart
-	local right = turnedBody.CFrame.RightVector
-	check(
-		"FacingYaw turns the override around the vertical axis",
-		math.abs(right.Z) > 0.99 and math.abs(right.X) < 0.01
-	)
-
-	-- Golden variants of textured models go fully gold (textures would hide the colour)
-	local textured = Instance.new("MeshPart")
-	textured.Name = "Body"
-	textured.Size = Vector3.new(2, 2, 2)
-	textured.TextureID = "rbxassetid://1234"
-	turned:ClearAllChildren()
-	turned:SetAttribute("FacingYaw", nil)
-	textured.Parent = turned
-	local golden = BrainrotModel.build("TimCheese", { variant = "Golden" })
-	local goldenBody = golden:FindFirstChild("Body") :: MeshPart
-	check("Golden variants drop mesh textures so the gold shows", goldenBody.TextureID == "")
-	turned:Destroy()
-
-	-- Creator Store models are cleaned before use: no scripts or interactive bits, parts anchored
-	local loaded = Instance.new("Model")
-	local meshBody = Instance.new("Part")
-	meshBody.Name = "Shark"
-	meshBody.Parent = loaded
-	for _, className in { "Script", "LocalScript", "ModuleScript", "Sound", "ClickDetector", "StringValue" } do
-		Instance.new(className).Parent = meshBody
-	end
-	Instance.new("Humanoid").Parent = loaded
-	local prepared = BrainrotAssets.prepare("TralaleroTralala", { loaded })
-	local leftovers = 0
-	for _, descendant in prepared:GetDescendants() do
-		if not descendant:IsA("BasePart") then
-			leftovers += 1
-		end
-	end
-	check("prepared models keep only their parts (scripts, sounds, values, humanoids removed)", leftovers == 0)
-	check(
-		"prepared models are named after the Brainrot and anchored",
-		prepared.Name == "TralaleroTralala" and (prepared:FindFirstChild("Shark", true) :: BasePart).Anchored
-	)
-	check(
-		"prepared models record where they came from",
-		prepared:GetAttribute("AssetId") == string.format("%d", BrainrotAssetIds.TralaleroTralala.assetId)
-	)
-	check("a model with no parts is rejected", BrainrotAssets.prepare("TimCheese", { Instance.new("Model") }) == nil)
-	local unknownIds = {}
-	for brainrotId, entry in BrainrotAssetIds do
-		if not BrainrotData.ById[brainrotId] or type(entry.assetId) ~= "number" then
-			table.insert(unknownIds, brainrotId)
-		end
-	end
-	check("every Creator Store entry is for a real Brainrot", #unknownIds == 0, table.concat(unknownIds, ", "))
-	assets:Destroy()
+	-- Rarer Brainrots get more detail and effects, but even the fanciest has to stay cheap to show in every cell.
+	check("models stay within the part budget (< 120 parts)", maxParts < 120, maxParts)
 end)

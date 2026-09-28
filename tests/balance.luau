@@ -37,8 +37,8 @@ local rng = {
 local data = {
 	coins = GameConfig.STARTING_COINS,
 	totalEarned = 0,
-	brainrots = { TimCheese = { Normal = 1, Golden = 0, Diamond = 0 } },
-	discovered = { TimCheese = true },
+	brainrots = { PotatoPrisoner = { Normal = 1, Golden = 0, Diamond = 0 } },
+	discovered = { PotatoPrisoner = true },
 	variantsFound = {},
 	upgrades = { Income = 0, Luck = 0, Discount = 0, Capacity = 0, Speed = 0 },
 	unlockedAreas = { CellBlock1 = true },

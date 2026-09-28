@@ -14,29 +14,6 @@ export type Kit = typeof(setmetatable({} :: { model: Model, count: number }, Kit
 export type Shell = {
 	center: Vector3,
 	radii: Vector3,
-	-- Optional rotation of the shell (a tilted head, a snout pointing up...).
-	rotation: CFrame?,
-}
-
--- One cross-section of a lofted body: its center, half-width and half-height.
-export type Section = {
-	at: Vector3,
-	w: number,
-	h: number,
-}
-
-export type LoftOptions = {
-	-- Which way a section's height points (default up). Fins use their chord direction.
-	up: Vector3?,
-	-- Spacing between the ellipsoids as a fraction of the larger radius (default 0.6).
-	density: number?,
-	-- How long each ellipsoid is compared with the spacing (default 6). Higher hides the seams
-	-- between ellipsoids; lower follows sharp tapers more closely.
-	overlap: number?,
-	-- Never place ellipsoids closer than this (keeps thin tails cheap).
-	minSpacing: number?,
-	-- At most this many ellipsoids between two sections (default 12).
-	maxSteps: number?,
 }
 
 export type EyeOptions = {
@@ -82,8 +59,13 @@ Kit.Colors = {
 	Mouth = MOUTH,
 	Tongue = TONGUE,
 	Blush = BLUSH,
+	Jumpsuit = Color3.fromRGB(250, 125, 35),
+	JumpsuitDark = Color3.fromRGB(215, 95, 25),
+	Stripe = Color3.fromRGB(40, 38, 48),
+	Iron = Color3.fromRGB(70, 72, 82),
 	Gold = Color3.fromRGB(255, 196, 45),
 	GoldDark = Color3.fromRGB(215, 150, 30),
+	Guard = Color3.fromRGB(45, 70, 150),
 	Sole = Color3.fromRGB(235, 232, 225),
 }
 
@@ -250,10 +232,6 @@ function Kit.surface(shell: Shell, yaw: number, pitch: number): (Vector3, Vector
 	local scaled = Vector3.new(dir.X / r.X, dir.Y / r.Y, dir.Z / r.Z)
 	local offset = dir / scaled.Magnitude
 	local normal = Vector3.new(offset.X / (r.X * r.X), offset.Y / (r.Y * r.Y), offset.Z / (r.Z * r.Z)).Unit
-	local rotation = shell.rotation
-	if rotation then
-		return shell.center + rotation:VectorToWorldSpace(offset), rotation:VectorToWorldSpace(normal)
-	end
 	return shell.center + offset, normal
 end
 
@@ -277,33 +255,6 @@ function Kit.widthAt(shell: Shell, y: number): (number, number)
 	return shell.radii.X * k, shell.radii.Z * k
 end
 
--- A flat-topped oval slab standing on `cframe` (soles, bases, lids, coins): an elliptical cylinder
--- `width` across X, `depth` along Z and `height` tall, centered on `cframe`.
-function Kit.oval(
-	self: Kit,
-	name: string,
-	cframe: CFrame,
-	width: number,
-	depth: number,
-	height: number,
-	color: Color3,
-	material: Enum.Material?,
-	rig: string?
-): Part
-	local part = self:part(
-		name,
-		Vector3.new(height, width, depth),
-		cframe * CFrame.Angles(0, 0, math.pi / 2),
-		color,
-		material,
-		rig
-	)
-	local mesh = Instance.new("SpecialMesh")
-	mesh.MeshType = Enum.MeshType.Cylinder
-	mesh.Parent = part
-	return part
-end
-
 -- A band of even thickness hugging a shell at height y: collars, belts, stripes, masks.
 -- The cylinder is a stretched SpecialMesh, so it follows oval bodies instead of poking out of them.
 function Kit.band(
@@ -323,128 +274,6 @@ function Kit.band(
 	mesh.MeshType = Enum.MeshType.Cylinder
 	mesh.Parent = part
 	return part
-end
-
----------------------------------------------------------------------------
--- Smooth bodies
----------------------------------------------------------------------------
-
-local function spline(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, t: number): Vector3
-	local t2, t3 = t * t, t * t * t
-	return 0.5 * ((2 * p1) + (p2 - p0) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (3 * p1 - p0 - 3 * p2 + p3) * t3)
-end
-
-local function splineNumber(a: number, b: number, c: number, d: number, t: number): number
-	local t2, t3 = t * t, t * t * t
-	return 0.5 * ((2 * b) + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (3 * b - a - 3 * c + d) * t3)
-end
-
--- A smooth tapered body through a list of sections (a shark, a tail, a trunk, a fin). The path is a
--- Catmull-Rom curve, and overlapping ellipsoids are laid along it, so the outline has no steps.
-function Kit.loft(
-	self: Kit,
-	name: string,
-	sections: { Section },
-	color: Color3,
-	material: Enum.Material?,
-	rig: string?,
-	options: LoftOptions?
-): { Part }
-	local opts: LoftOptions = options or {}
-	local density = opts.density or 0.6
-	local overlap = opts.overlap or 6
-	local minSpacing = opts.minSpacing or 0.12
-	local upHint = opts.up or Vector3.yAxis
-	local count = #sections
-	local samples: { Section } = {}
-	for i = 1, count - 1 do
-		local a, b = sections[i], sections[i + 1]
-		local before, after = sections[math.max(i - 1, 1)], sections[math.min(i + 2, count)]
-		local length = (b.at - a.at).Magnitude
-		-- Spacing follows the section's larger radius: that is the outline people see (a fin's
-		-- chord, not its thickness)
-		local radius = (math.max(a.w, a.h) + math.max(b.w, b.h)) / 2
-		local steps = math.clamp(math.ceil(length / math.max(radius * density, minSpacing)), 1, opts.maxSteps or 12)
-		for step = 0, steps - 1 do
-			local t = step / steps
-			table.insert(samples, {
-				at = spline(before.at, a.at, b.at, after.at, t),
-				w = math.max(splineNumber(before.w, a.w, b.w, after.w, t), 0.02),
-				h = math.max(splineNumber(before.h, a.h, b.h, after.h, t), 0.02),
-			})
-		end
-	end
-	table.insert(samples, sections[count])
-
-	-- Distance of every sample along the path, so ellipsoids near the ends are kept short enough to
-	-- stop at the first and last sections (rounded caps instead of long overhangs).
-	local along = { 0 }
-	for i = 2, #samples do
-		along[i] = along[i - 1] + (samples[i].at - samples[i - 1].at).Magnitude
-	end
-	local total = along[#samples]
-
-	local parts = {}
-	for i, sample in samples do
-		local prev = samples[math.max(i - 1, 1)].at
-		local nextAt = samples[math.min(i + 1, #samples)].at
-		local span = nextAt - prev
-		local tangent = if span.Magnitude > 1e-4 then span.Unit else Vector3.zAxis
-		local intervals = math.min(i + 1, #samples) - math.max(i - 1, 1)
-		local spacing = span.Magnitude / math.max(intervals, 1)
-		local up = upHint - tangent * upHint:Dot(tangent)
-		up = if up.Magnitude > 1e-4 then up.Unit else Vector3.xAxis:Cross(tangent).Unit
-		local right = up:Cross(tangent)
-		local cframe = CFrame.fromMatrix(sample.at, right, up)
-		local cap = math.min(sample.w, sample.h) * 1.8
-		local room = 2 * math.min(along[i], total - along[i]) + cap
-		local length = math.max(math.min(spacing * overlap, room), cap)
-		-- On a bend, a long straight ellipsoid would stick out of the curve: keep its sag within
-		-- about a third of the radius (sag = length^2 / 8R)
-		if i > 1 and i < #samples then
-			local a = (sample.at - samples[i - 1].at).Unit
-			local b = (samples[i + 1].at - sample.at).Unit
-			local bend = math.acos(math.clamp(a:Dot(b), -1, 1))
-			if bend > 1e-3 then
-				local bendRadius = spacing / bend
-				local limit = math.sqrt(2.4 * math.max(sample.w, sample.h) * bendRadius)
-				length = math.max(math.min(length, limit), spacing * 1.6, cap)
-			end
-		end
-		table.insert(
-			parts,
-			self:ellipsoid(name, Vector3.new(sample.w * 2, sample.h * 2, length), cframe, color, material, rig)
-		)
-	end
-	return parts
-end
-
--- A pointed tooth: a thin wedge whose flat top sits at `cframe` (LookVector out of the mouth) and
--- whose point hangs `length` below it (or above it, with a negative length).
-function Kit.tooth(self: Kit, cframe: CFrame, width: number, length: number, color: Color3?, rig: string?): Part
-	local down = if length >= 0 then -cframe.UpVector else cframe.UpVector
-	local h = math.abs(length)
-	local out = cframe.LookVector
-	local frame = CFrame.fromMatrix(cframe.Position + down * (h / 2), out, down)
-	local part = self:part("Tooth", Vector3.new(0.06, h, width), frame, color or WHITE, nil, rig)
-	part.Shape = Enum.PartType.Wedge
-	return part
-end
-
--- Turns everything built so far around the vertical axis (for a three-quarter display pose), along
--- with the joints the animator swings things around.
-function Kit.turn(self: Kit, degrees: number)
-	local rotation = CFrame.Angles(0, math.rad(degrees), 0)
-	for _, descendant in self.model:GetDescendants() do
-		if descendant:IsA("BasePart") and descendant.Name ~= "Root" then
-			descendant.CFrame = rotation * descendant.CFrame
-		end
-	end
-	for key, value in self.model:GetAttributes() do
-		if typeof(value) == "Vector3" then
-			self.model:SetAttribute(key, rotation * value)
-		end
-	end
 end
 
 ---------------------------------------------------------------------------
@@ -682,6 +511,35 @@ end
 -- Clothing and gear
 ---------------------------------------------------------------------------
 
+-- A chunky cartoon shoe. `position` is the ankle point on the ground plane (y = 0).
+function Kit.shoe(self: Kit, position: Vector3, size: number, color: Color3, soleColor: Color3?, rig: string?)
+	local base = CFrame.new(position.X, 0, position.Z - size * 0.18)
+	self:ellipsoid(
+		"Shoe",
+		Vector3.new(size * 0.95, size * 0.62, size * 1.38),
+		base * CFrame.new(0, size * 0.34, 0),
+		color,
+		nil,
+		rig
+	)
+	self:ellipsoid(
+		"Sole",
+		Vector3.new(size * 1.02, size * 0.28, size * 1.46),
+		base * CFrame.new(0, size * 0.1, 0),
+		soleColor or Kit.Colors.Sole,
+		nil,
+		rig
+	)
+	self:ellipsoid(
+		"ToeCap",
+		Vector3.new(size * 0.7, size * 0.36, size * 0.5),
+		base * CFrame.new(0, size * 0.3, -size * 0.52),
+		soleColor or Kit.Colors.Sole,
+		nil,
+		rig
+	)
+end
+
 -- A white chest badge with a prison number printed on it.
 function Kit.badge(self: Kit, cframe: CFrame, text: string, width: number, rig: string?): Part
 	local badge =
@@ -702,6 +560,38 @@ function Kit.badge(self: Kit, cframe: CFrame, text: string, width: number, rig: 
 	label.Text = text
 	label.Parent = gui
 	return badge
+end
+
+-- Iron ball and chain attached at `ankle`, resting at `ballAt`.
+function Kit.ballAndChain(self: Kit, ankle: Vector3, ballAt: Vector3, legDiameter: number)
+	self:cylinder(
+		"Shackle",
+		legDiameter * 0.45,
+		legDiameter * 1.18,
+		CFrame.new(ankle),
+		Kit.Colors.Iron,
+		Enum.Material.Metal
+	)
+	local ball = Vector3.new(ballAt.X, 0.62, ballAt.Z)
+	self:ball("IronBall", 1.24, ball, Color3.fromRGB(45, 45, 55), Enum.Material.Metal)
+	self:ball(
+		"BallShine",
+		0.3,
+		ball + Vector3.new(-0.22, 0.34, -0.36),
+		Color3.fromRGB(140, 140, 160),
+		Enum.Material.Metal
+	)
+	local links = 4
+	local from = ankle + (ball - ankle).Unit * legDiameter * 0.55
+	local to = ball + (ankle - ball).Unit * 0.6
+	for i = 1, links do
+		local t = (i - 0.5) / links
+		local point = from:Lerp(to, t) + Vector3.new(0, -math.sin(t * math.pi) * 0.25, 0)
+		local turn = if i % 2 == 0 then math.pi / 2 else 0
+		local along = (to - from).Unit
+		local cframe = CFrame.lookAt(point, point + along) * CFrame.Angles(0, 0, turn)
+		self:part("ChainLink", Vector3.new(0.12, 0.3, 0.42), cframe, Kit.Colors.Iron, Enum.Material.Metal)
+	end
 end
 
 return Kit

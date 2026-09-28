@@ -1,7 +1,6 @@
 -- Architecture: floors, painted walls with openings, pillars, roofs with beams and skylights.
--- Walls follow the prison's art direction: cream plaster above a teal painted band, a yellow stripe
--- where they meet, a dark baseboard, a cornice at the top and charcoal pilasters at a steady
--- rhythm, so long walls never read as flat slabs.
+-- Walls are two-tone like a real institution: painted lower band, concrete above, a dark
+-- baseboard and a chair rail where the two meet.
 
 local Palette = require(script.Parent.Palette)
 local Shapes = require(script.Parent.Shapes)
@@ -20,13 +19,6 @@ export type WallStyle = {
 	thickness: number?,
 	-- Which faces get the paint band: 1 = the +normal side, -1 = the -normal side, 0 = both.
 	paintSide: number?,
-	-- The painted stripe above the band (default Palette.Stripe; false for none).
-	stripe: (Color3 | boolean)?,
-	-- Distance between pilasters (default 16; 0 for none) and their color.
-	pilasterEvery: number?,
-	pilaster: Color3?,
-	-- Material of the painted band (default SmoothPlastic; Brick for an outdoor plinth).
-	paintMaterial: Enum.Material?,
 }
 
 export type Opening = {
@@ -102,14 +94,10 @@ local function segment(
 		v3(length, top - bottom, thickness),
 		frame * CFrame.new(x, (bottom + top) / 2, 0),
 		style.wall,
-		style.material or M.Plaster
+		style.material or M.Concrete
 	)
 	local paintHeight = style.paintHeight or 7
 	local side = style.paintSide or 0
-	local stripe: Color3? = if style.stripe == false
-		then nil
-		elseif typeof(style.stripe) == "Color3" then style.stripe
-		else Palette.Stripe
 	for _, face in { -1, 1 } do
 		if side == 0 or side == face then
 			local z = face * (thickness / 2 + 0.03)
@@ -120,36 +108,24 @@ local function segment(
 					v3(length, paintTop - bottom, 0.06),
 					frame * CFrame.new(x, (bottom + paintTop) / 2, z),
 					style.paint,
-					style.paintMaterial or M.SmoothPlastic
+					M.SmoothPlastic
 				)
 				if top > paintHeight then
-					-- A painted stripe where the band ends, or a steel rail if the wall has no stripe
-					if stripe then
-						s:deco(
-							"WallStripe",
-							v3(length, 0.5, 0.08),
-							frame * CFrame.new(x, paintHeight + 0.2, face * (thickness / 2 + 0.05)),
-							stripe,
-							M.SmoothPlastic
-						).CastShadow =
-							false
-					else
-						s:deco(
-							"ChairRail",
-							v3(length, 0.3, 0.14),
-							frame * CFrame.new(x, paintHeight, face * (thickness / 2 + 0.07)),
-							Palette.Frame,
-							M.Metal
-						)
-					end
+					s:deco(
+						"ChairRail",
+						v3(length, 0.35, 0.16),
+						frame * CFrame.new(x, paintHeight, face * (thickness / 2 + 0.08)),
+						Palette.SteelDark,
+						M.Metal
+					)
 				end
 			end
 			if bottom <= 0.01 then
 				s:deco(
 					"Baseboard",
-					v3(length, 0.7, 0.14),
-					frame * CFrame.new(x, 0.35, face * (thickness / 2 + 0.07)),
-					Palette.Frame,
+					v3(length, 0.8, 0.14),
+					frame * CFrame.new(x, 0.4, face * (thickness / 2 + 0.07)),
+					Palette.SteelDark,
 					M.SmoothPlastic
 				)
 			end
@@ -158,30 +134,11 @@ local function segment(
 	if top >= height - 0.01 then
 		s:deco(
 			"WallCap",
-			v3(length, 0.9, thickness + 0.5),
-			frame * CFrame.new(x, height - 0.45, 0),
-			Palette.Frame,
+			v3(length, 0.6, thickness + 0.3),
+			frame * CFrame.new(x, height - 0.3, 0),
+			style.wall:Lerp(Palette.Ink, 0.25),
 			M.Concrete
 		)
-		-- Pilasters on full-height stretches, kept clear of doorways
-		local every = style.pilasterEvery or 16
-		if every > 0 and bottom <= 0.01 then
-			local first = math.ceil((from + 1.5) / every) * every
-			for at = first, to - 1.5, every do
-				for _, face in { -1, 1 } do
-					if side == 0 or side == face then
-						local z = face * (thickness / 2 + 0.3)
-						s:deco(
-							"Pilaster",
-							v3(1.6, height - 0.9, 0.6),
-							frame * CFrame.new(at, (height - 0.9) / 2, z),
-							style.pilaster or Palette.Frame,
-							M.Concrete
-						)
-					end
-				end
-			end
-		end
 	end
 end
 
@@ -240,13 +197,19 @@ function Structure.frame(
 			"Jamb",
 			v3(0.6, height, depth),
 			center * CFrame.new(side * (width / 2 - 0.3), sill + height / 2, 0),
-			Palette.Frame,
+			Palette.SteelDark,
 			M.Metal
 		)
 	end
-	s:deco("Header", v3(width, 0.6, depth), center * CFrame.new(0, sill + height - 0.3, 0), Palette.Frame, M.Metal)
+	s:deco("Header", v3(width, 0.6, depth), center * CFrame.new(0, sill + height - 0.3, 0), Palette.SteelDark, M.Metal)
 	if sill > 0 then
-		s:deco("Sill", v3(width + 0.4, 0.4, depth + 0.3), center * CFrame.new(0, sill + 0.2, 0), Palette.Frame, M.Metal)
+		s:deco(
+			"Sill",
+			v3(width + 0.4, 0.4, depth + 0.3),
+			center * CFrame.new(0, sill + 0.2, 0),
+			Palette.SteelDark,
+			M.Metal
+		)
 	end
 end
 
@@ -276,10 +239,15 @@ end
 
 function Structure.pillar(parent: Instance, position: Vector3, width: number, height: number, color: Color3)
 	local s = Shapes.new(parent, CFrame.new(position))
-	s:box("Pillar", v3(width, height, width), CFrame.new(0, height / 2, 0), color, M.Plaster)
-	s:deco("PillarBase", v3(width + 0.6, 1.4, width + 0.6), CFrame.new(0, 0.7, 0), Palette.Frame, M.Concrete)
-	s:deco("PillarBand", v3(width + 0.2, 0.5, width + 0.2), CFrame.new(0, 7.4, 0), Palette.Stripe, M.SmoothPlastic)
-	s:deco("PillarCap", v3(width + 0.8, 1, width + 0.8), CFrame.new(0, height - 0.5, 0), Palette.Frame, M.Concrete)
+	s:box("Pillar", v3(width, height, width), CFrame.new(0, height / 2, 0), color, M.Concrete)
+	s:deco("PillarBase", v3(width + 0.5, 1, width + 0.5), CFrame.new(0, 0.5, 0), Palette.SteelDark, M.Concrete)
+	s:deco(
+		"PillarCap",
+		v3(width + 0.6, 0.8, width + 0.6),
+		CFrame.new(0, height - 0.4, 0),
+		color:Lerp(Palette.Ink, 0.2),
+		M.Concrete
+	)
 end
 
 export type RoofOptions = {
@@ -360,7 +328,7 @@ function Structure.roof(
 				"RoofSkylightFrame",
 				v3(hole[2] - hole[1], 0.5, 0.4),
 				CFrame.new((hole[1] + hole[2]) / 2, y + 1, z),
-				Palette.Frame,
+				Palette.SteelDark,
 				M.Metal
 			)
 		end
@@ -378,8 +346,13 @@ function Structure.roof(
 		local count = math.floor((z2 - z1) / every)
 		for i = 1, count - 1 do
 			local z = z1 + i * (z2 - z1) / count
-			local beam =
-				s:deco("RoofBeam", v3(x2 - x1, 1.4, 0.8), CFrame.new((x1 + x2) / 2, y - 0.7, z), Palette.Frame, M.Metal)
+			local beam = s:deco(
+				"RoofBeam",
+				v3(x2 - x1, 1.4, 0.8),
+				CFrame.new((x1 + x2) / 2, y - 0.7, z),
+				Palette.SteelDark,
+				M.Metal
+			)
 			beam:SetAttribute("Roof", true)
 		end
 	end

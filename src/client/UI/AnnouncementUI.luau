@@ -41,31 +41,22 @@ local function showNextBanner()
 	local info = table.remove(bannerQueue, 1) :: { [string]: any }
 	local big = info.style == "big" or info.style == "secret"
 
-	-- A dark glass banner with the announcement's color as an accent, so it informs without
-	-- covering the middle of the screen in a slab of color
 	local banner = Theme.frame({
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, -120),
-		Size = UDim2.fromOffset(if big then 640 else 520, if big then 78 else 56),
-		BackgroundColor3 = C.Panel,
-		BackgroundTransparency = 0.08,
+		Size = UDim2.fromOffset(if big then 760 else 600, if big then 110 else 70),
+		BackgroundColor3 = info.color,
 		Parent = bannerHolder,
 	})
-	Theme.corner(banner, 16)
-	Theme.stroke(banner, info.color, 2)
-	local accent = Theme.frame({
-		Position = UDim2.fromOffset(10, 10),
-		Size = UDim2.new(0, 6, 1, -20),
-		BackgroundColor3 = info.color,
-		Parent = banner,
-	})
-	Theme.corner(accent, 3)
+	Theme.corner(banner, 20)
+	Theme.stroke(banner, C.Shadow, 4)
+	Theme.gradient(banner, C.White)
 	Theme.label({
-		Position = UDim2.fromOffset(28, 8),
-		Size = UDim2.new(1, -44, 1, -16),
+		Size = UDim2.fromScale(1, 1),
 		Text = info.text,
 		Parent = banner,
 	})
+	Theme.padding(banner, 10)
 
 	if info.sound and info.sound ~= "" then
 		Sounds.play(info.sound)

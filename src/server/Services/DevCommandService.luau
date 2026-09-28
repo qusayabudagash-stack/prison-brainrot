@@ -1,7 +1,7 @@
 -- Chat commands for testing in Roblox Studio only. They never load in a live game.
 --   /coins 1000000      add coins
 --   /event LuckyHour    start an event (DoubleIncome, LuckyHour, CrazyRolls, PrisonKing, EscapedBrainrots)
---   /give TralaleroTralala Golden   give a Brainrot (variant optional)
+--   /give PrisonKing Golden   give a Brainrot (variant optional)
 --   /pity 149           set the pity counter
 --   /resetdaily         make the daily free roll ready again
 

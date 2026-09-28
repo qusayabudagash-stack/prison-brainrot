@@ -35,15 +35,14 @@ local EAST_BACK = BOX.x2 - 2 -- the hall's wall is 2 studs thick
 local SLOTS = { -50, -30, -10, 10, 30, 50 }
 local EAST_SLOTS = { -50, -30, 30, 50 }
 
--- One color per cell (walls, door frame, pedestals), so neighbours are easy to tell apart and the
--- block reads as a row of lived-in rooms rather than identical boxes.
+-- Muted wall colors, one per cell, so neighbours are easy to tell apart without shouting.
 local CELL_PAINT = {
-	rgb(86, 168, 178),
-	rgb(236, 146, 108),
-	rgb(146, 128, 208),
-	rgb(112, 186, 124),
-	rgb(236, 190, 84),
-	rgb(104, 156, 226),
+	rgb(112, 138, 150),
+	rgb(128, 146, 116),
+	rgb(156, 132, 112),
+	rgb(134, 120, 150),
+	rgb(150, 142, 110),
+	rgb(110, 134, 136),
 }
 
 local WALL_STYLE: Structure.WallStyle =
@@ -60,39 +59,19 @@ local function buildCell(parent: Instance, index: number, origin: CFrame, label:
 	model:SetAttribute("OwnerId", 0)
 	local paint = CELL_PAINT[(index - 1) % #CELL_PAINT + 1]
 
-	-- Tiled floor, walls painted in the cell's color with a cream upper half and a stripe
-	s:box("CellFloor", v3(18, 0.1, 16), CFrame.new(0, 0.05, 0), rgb(214, 208, 196), M.CeramicTiles)
-	s:deco("CellRug", v3(7, 0.06, 5), CFrame.new(1.5, 0.13, 1.5), paint:Lerp(Palette.White, 0.35), M.Carpet)
+	-- Floor tiles and painted walls
+	s:box("CellFloor", v3(18, 0.1, 16), CFrame.new(0, 0.05, 0), rgb(186, 182, 172), M.Concrete)
 	s:deco("BackPaint", v3(18, 7, 0.1), CFrame.new(0, 3.5, 7.95), paint, M.SmoothPlastic)
-	s:deco(
-		"BackUpper",
-		v3(18, CELL_HEIGHT - 7, 0.08),
-		CFrame.new(0, 7 + (CELL_HEIGHT - 7) / 2, 7.97),
-		Palette.Concrete,
-		M.Plaster
-	)
-	s:deco("BackStripe", v3(18, 0.4, 0.12), CFrame.new(0, 7.2, 7.92), Palette.White, M.SmoothPlastic)
 	for _, side in { -1, 1 } do
 		s:deco("SidePaint", v3(0.1, 7, 16), CFrame.new(side * 8.95, 3.5, 0), paint, M.SmoothPlastic)
-		s:deco("SideStripe", v3(0.12, 0.4, 16), CFrame.new(side * 8.92, 7.2, 0), Palette.White, M.SmoothPlastic)
 	end
-	s:deco("CellCeiling", v3(18, 0.4, 16), CFrame.new(0, CELL_HEIGHT - 0.2, 0), Palette.Roof, M.Concrete)
+	s:deco("CellCeiling", v3(18, 0.4, 16), CFrame.new(0, CELL_HEIGHT - 0.2, 0), Palette.ConcreteDark, M.Concrete)
 
 	-- Bars across the front with the sliding door pulled open
 	Props.bars(model, s:world(CFrame.new(-6, 0, -8)), 6, CELL_HEIGHT - 1, 1.1, "BarsLeft")
 	Props.bars(model, s:world(CFrame.new(6, 0, -8)), 6, CELL_HEIGHT - 1, 1.1, "BarsRight")
 	Props.bars(model, s:world(CFrame.new(-5.6, 0, -8.6)), 6, CELL_HEIGHT - 1.4, 1.1, "SlidingDoor")
-	-- A painted steel door frame in the cell's color
-	s:box("Header", v3(18.4, 1.2, 1), CFrame.new(0, CELL_HEIGHT - 0.6, -8), paint:Lerp(Palette.Ink, 0.2), M.Metal)
-	for _, side in { -1, 1 } do
-		s:box(
-			"Jamb",
-			v3(0.8, CELL_HEIGHT, 1.1),
-			CFrame.new(side * 8.8, CELL_HEIGHT / 2, -8),
-			paint:Lerp(Palette.Ink, 0.2),
-			M.Metal
-		)
-	end
+	s:box("Header", v3(18.4, 1.2, 1), CFrame.new(0, CELL_HEIGHT - 0.6, -8), Palette.Bars, M.Metal)
 	s:deco("DoorTrack", v3(18, 0.3, 0.6), CFrame.new(0, CELL_HEIGHT - 1.4, -8.6), Palette.SteelDark, M.Metal)
 	local plate = s:deco("CellNumber", v3(2.6, 0.9, 0.1), CFrame.new(0, CELL_HEIGHT - 0.6, -8.55), Palette.White)
 	Build.surfaceText(
@@ -127,19 +106,16 @@ local function buildCell(parent: Instance, index: number, origin: CFrame, label:
 		s:deco("Vent", v3(3, 1.2, 0.2), CFrame.new(-2.5, 9.6, 7.85), Palette.Steel, M.Metal)
 	end
 
-	-- Display plinths at the front of the cell, lit by one soft lamp
+	-- Display pedestals at the front of the cell
 	for i, x in { -5.5, 0, 5.5 } do
-		s:cyl("PedestalBase", 0.4, 3.6, CFrame.new(x, 0.2, -3.6), Palette.Frame, M.Concrete)
-		s:cyl("Pedestal", 0.8, 3, CFrame.new(x, 0.8, -3.6), paint, M.SmoothPlastic)
-		s:cyl("PedestalTop", 0.2, 3.3, CFrame.new(x, 1.3, -3.6), Palette.Gold, M.Foil)
+		s:cyl("Pedestal", 1.2, 3.2, CFrame.new(x, 0.6, -3.6), Palette.SteelLight, M.Metal)
+		local glow = s:cyl("PedestalGlow", 1.22, 2.6, CFrame.new(x, 0.6, -3.6), Palette.LightWarm, M.Neon, false)
+		glow.Transparency = 0.6
+		glow.CastShadow = false
+		s:cyl("PedestalTop", 0.2, 3.4, CFrame.new(x, 1.3, -3.6), Palette.SteelDark, M.Metal)
 		local anchor = s:deco(`Display{i}`, v3(1, 1, 1), CFrame.new(x, 1.4, -3.6), Palette.White)
 		anchor.Transparency = 1
 	end
-	local displayLamp =
-		s:deco("DisplayLamp", v3(12, 0.3, 0.8), CFrame.new(0, CELL_HEIGHT - 0.55, -5), Palette.LightWarm, M.Neon)
-	displayLamp.CastShadow = false
-	local lampLight = s:spot(displayLamp, Palette.LightWarm, 14, 1.2, 100, Enum.NormalId.Bottom)
-	lampLight.Shadows = false
 	Build.folder(model, "Displays")
 	Build.folder(model, "Decor")
 
@@ -202,13 +178,11 @@ function CellWing.build(folder: Instance): { Model }
 	local h = BOX.height
 	local zMid = (BOX.z1 + BOX.z2) / 2
 
-	-- Tiled floor with a teal runner down the corridor
-	Structure.floor(folder, "Floor", BOX.x1, BOX.x2, BOX.z1, BOX.z2, Y, Palette.FloorLight, M.CeramicTiles)
+	-- Floor with a painted walkway
+	Structure.floor(folder, "Floor", BOX.x1, BOX.x2, BOX.z1, BOX.z2, Y, Palette.Floor, M.Concrete)
 	local corridor = (WEST_BACK + DEPTH + EAST_BACK - DEPTH) / 2
-	s:deco("Runner", v3(11, 0.06, BOX.z2 - BOX.z1 - 4), CFrame.new(corridor, 0.03, zMid), Palette.Paint, M.CeramicTiles).CastShadow =
-		false
-	for _, x in { corridor - 5.75, corridor + 5.75 } do
-		s:deco("WalkLine", v3(0.5, 0.07, BOX.z2 - BOX.z1 - 4), CFrame.new(x, 0.035, zMid), Palette.Stripe).CastShadow =
+	for _, x in { corridor - 6, corridor + 6 } do
+		s:deco("WalkLine", v3(0.5, 0.06, BOX.z2 - BOX.z1 - 4), CFrame.new(x, 0.03, zMid), Palette.Hazard).CastShadow =
 			false
 	end
 	for z = BOX.z1 + 6, BOX.z2 - 6, 12 do
@@ -263,8 +237,7 @@ function CellWing.build(folder: Instance): { Model }
 			edges[z + 10] = true
 		end
 		for z in edges do
-			s:box("Divider", v3(DEPTH, h, 1), CFrame.new(mid, h / 2, z), Palette.Concrete, M.Plaster)
-			s:deco("DividerFace", v3(DEPTH + 0.2, 1.2, 1.2), CFrame.new(mid, h - 0.6, z), Palette.Frame, M.Concrete)
+			s:box("Divider", v3(DEPTH, h, 1), CFrame.new(mid, h / 2, z), Palette.Concrete, M.Concrete)
 		end
 		-- Catwalks in front of the upper tier, over each run of cells
 		local runs: { { number } } = if facing > 0 then { { BOX.z1, BOX.z2 } } else { { BOX.z1, -20 }, { 20, BOX.z2 } }

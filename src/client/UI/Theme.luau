@@ -1,10 +1,9 @@
 -- The UI toolkit: colors, fonts, and helpers for bouncy buttons, rounded panels and tweens.
 -- Every screen in the game is built from these so the style stays consistent.
 --
--- The look: chunky rounded shapes with a thin dark outline, a lit top and a subtle darker "lip"
--- along the bottom so buttons read as pressable keys; white text with a dark stroke; one strong
--- color per function (gold = money, green = income/buy, red = roll, blue = upgrades, purple =
--- rebirth) and the rarity colors from BrainrotData for anything about rarity.
+-- The look: chunky rounded shapes with a dark outline, a lit top and a darker "lip" along the
+-- bottom so buttons read as pressable 3D keys; white text with a dark stroke; one strong color per
+-- function (gold = money, green = income/buy, red = roll, blue = upgrades, purple = rebirth).
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -63,11 +62,10 @@ function Theme.corner(parent: Instance, radius: number?): UICorner
 	return Theme.new("UICorner", { CornerRadius = UDim.new(0, radius or 14), Parent = parent })
 end
 
--- Outlines are kept thin (70% of the requested weight) so panels read clean rather than heavy.
 function Theme.stroke(parent: Instance, color: Color3?, thickness: number?): UIStroke
 	return Theme.new("UIStroke", {
 		Color = color or Theme.Colors.Shadow,
-		Thickness = (thickness or 3) * 0.7,
+		Thickness = thickness or 3,
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		Parent = parent,
 	})
@@ -94,15 +92,15 @@ end
 -- The 3D key look: full color on top, gently shaded, with a darker lip along the bottom edge.
 -- (UIGradient multiplies the background, so white keeps the color and grey darkens it.)
 function Theme.keyGradient(parent: Instance, lip: number?): UIGradient
-	local edge = 1 - (lip or 0.12)
+	local edge = 1 - (lip or 0.16)
 	local g = Color3.fromRGB
 	return Theme.new("UIGradient", {
 		Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, g(255, 255, 255)),
-			ColorSequenceKeypoint.new(edge * 0.55, g(246, 246, 246)),
-			ColorSequenceKeypoint.new(edge - 0.001, g(226, 226, 226)),
-			ColorSequenceKeypoint.new(edge, g(178, 178, 178)),
-			ColorSequenceKeypoint.new(1, g(170, 170, 170)),
+			ColorSequenceKeypoint.new(edge * 0.55, g(242, 242, 242)),
+			ColorSequenceKeypoint.new(edge - 0.001, g(214, 214, 214)),
+			ColorSequenceKeypoint.new(edge, g(150, 150, 150)),
+			ColorSequenceKeypoint.new(1, g(140, 140, 140)),
 		}),
 		Rotation = 90,
 		Parent = parent,
