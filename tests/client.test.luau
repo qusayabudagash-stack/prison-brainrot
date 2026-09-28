@@ -71,6 +71,12 @@ T.run(function()
 
 	local function click(root, pattern)
 		local button = find(root, pattern, "TextButton")
+		if not button then
+			-- HUD tiles keep their text in a caption next to the button
+			local caption = find(root, pattern, "TextLabel")
+			local holder = caption and caption.Parent
+			button = holder and holder:FindFirstChild("Button")
+		end
 		assert(button, `No button "{pattern}"`)
 		button.Activated:Fire()
 		task.wait(0.1)
@@ -170,7 +176,7 @@ T.run(function()
 	---------------------------------------------------------------------------
 	section("Brainrot Book")
 	---------------------------------------------------------------------------
-	click(screen("MainUI"), "🧠 BOOK")
+	click(screen("MainUI"), "BOOK")
 	local book = screen("CollectionUI")
 	check("book opens", book.Enabled == true)
 	local cards = 0
@@ -207,7 +213,7 @@ T.run(function()
 	---------------------------------------------------------------------------
 	EconomyService.add(alice, 1e9)
 	task.wait(0.2)
-	click(screen("MainUI"), "⬆️ UPGRADES")
+	click(screen("MainUI"), "UPGRADES")
 	local shop = screen("ShopUI")
 	check("shop opens on upgrades", shop.Enabled == true and find(shop, "Income Multiplier") ~= nil)
 	task.wait(0.1)
@@ -245,7 +251,7 @@ T.run(function()
 	---------------------------------------------------------------------------
 	section("Odds")
 	---------------------------------------------------------------------------
-	click(screen("MainUI"), "📊 ODDS")
+	click(screen("MainUI"), "ODDS")
 	check(
 		"odds panel shows every rarity",
 		find(screen("MainUI"), "LEGENDARY") ~= nil and find(screen("MainUI"), "SECRET") ~= nil
@@ -255,7 +261,7 @@ T.run(function()
 	---------------------------------------------------------------------------
 	section("Rebirth")
 	---------------------------------------------------------------------------
-	click(screen("MainUI"), "🔄 REBIRTH")
+	click(screen("MainUI"), "REBIRTH")
 	local rebirthUI = screen("RebirthUI")
 	check("rebirth screen opens", rebirthUI.Enabled == true)
 	data.coins = Formulas.rebirthCost(0)

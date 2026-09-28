@@ -1,7 +1,8 @@
 -- The always-on HUD:
---   top:    💰 coins   💵 +income/sec   🍀 luck, with LUCKY ROLLS progress and boost timer underneath
---   left:   🎁 daily free roll and 🍀 free luck (with countdowns), 📊 odds
---   bottom: 🧠 BOOK  🛒 SHOP  🎰 ROLL (with block picker)  ⬆️ UPGRADES  🔄 REBIRTH
+--   top:    one stat bar (💰 coins | 💵 income/sec | 🍀 luck) with the LUCKY ROLLS progress bar and
+--           the luck boost timer under it
+--   left:   🎁 daily free roll, 🍀 free luck and 📊 odds tiles (a red dot when something is ready)
+--   bottom: 🧠 BOOK  🛒 SHOP  [block picker + big 🎰 ROLL key]  ⬆️ UPGRADES  🔄 REBIRTH
 --   right:  the odds panel for the selected block
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,18 +23,21 @@ local MainUI = {}
 
 local C = Theme.Colors
 
-type Pill = { frame: Frame, label: TextLabel }
-
-local coinsPill: Pill
-local incomePill: Pill
-local luckPill: Pill
-local pityLabel: TextLabel
+local coinsLabel: TextLabel
+local incomeLabel: TextLabel
+local luckLabel: TextLabel
+local statBar: Frame
+local pityBar: Theme.ProgressBar
 local boostLabel: TextLabel
-local dailyButton: TextButton
-local freeLuckButton: TextButton
+local dailyTile: Theme.Tile
+local freeLuckTile: Theme.Tile
+local rebirthTile: Theme.Tile
+local dailyBadge: TextLabel
+local luckBadge: TextLabel
+local rebirthBadge: TextLabel
 local rollButton: TextButton
+local rollGlow: Frame
 local areaLabel: TextLabel
-local rebirthButton: TextButton
 local oddsPanel: Frame
 local oddsTitle: TextLabel
 local oddsLuck: TextLabel
@@ -48,23 +52,33 @@ local shownIncome = 0
 -- Building blocks
 ---------------------------------------------------------------------------
 
-local function pill(parent: Instance, color: Color3, width: number, order: number): Pill
-	local frame = Theme.frame({
-		Size = UDim2.fromOffset(width, 58),
-		BackgroundColor3 = color,
+-- One segment of the stat bar: a label that fills the segment, in the segment's color.
+local function segment(parent: Instance, width: number, color: Color3, order: number): TextLabel
+	local holder = Theme.frame({
+		Size = UDim2.new(0, width, 1, 0),
+		BackgroundTransparency = 1,
 		LayoutOrder = order,
 		Parent = parent,
 	})
-	Theme.corner(frame, 18)
-	Theme.stroke(frame, C.Shadow, 3)
-	Theme.gradient(frame, C.White)
 	local label = Theme.label({
-		Size = UDim2.new(1, -20, 1, -10),
-		Position = UDim2.fromOffset(10, 5),
+		Size = UDim2.new(1, -16, 1, -18),
+		Position = UDim2.fromOffset(8, 9),
+		TextColor3 = color,
 		Text = "...",
-		Parent = frame,
+		Parent = holder,
 	})
-	return { frame = frame, label = label }
+	Theme.textStroke(label, 2)
+	return label
+end
+
+local function divider(parent: Instance, order: number)
+	Theme.frame({
+		Size = UDim2.new(0, 2, 1, -22),
+		BackgroundColor3 = C.Muted,
+		BackgroundTransparency = 0.5,
+		LayoutOrder = order,
+		Parent = parent,
+	})
 end
 
 local function floatUp(parent: Instance, text: string, color: Color3, x: number)
@@ -90,9 +104,9 @@ end
 local function updateCoins(coins: number)
 	local gained = coins - shownCoins
 	shownCoins = coins
-	coinsPill.label.Text = `💰 {Format.money(coins)}`
+	coinsLabel.Text = `💰 {Format.money(coins)}`
 	if gained > 0 and gained < math.huge then
-		floatUp(coinFloats, `+{Format.money(gained)}`, C.Gold, 130)
+		floatUp(coinFloats, `+{Format.money(gained)}`, C.Gold, 110)
 	end
 end
 
@@ -109,9 +123,10 @@ local function updateOdds()
 		local row = oddsRows[index]
 		if row then
 			local chanceText = if odds.chance > 0
-				then `{Format.chance(odds.chance)}  <font size="16">({Format.oneIn(odds.chance)})</font>`
+				then `{Format.chance(odds.chance)}  <font color="#9692B8">{Format.oneIn(odds.chance)}</font>`
 				else "—"
-			row.Text = `<font color="#{odds.rarity.color:ToHex()}">{odds.rarity.name}</font>   {chanceText}`
+			local color = if odds.rarity.id == "Secret" then "FF78E6" else odds.rarity.color:ToHex()
+			row.Text = `<font color="#{color}">{odds.rarity.name}</font>   {chanceText}`
 		end
 	end
 	local golden, diamond = RollSystem.variantChances(luck)
@@ -128,11 +143,14 @@ local function updateRollButton()
 	if RollUI.isBusy() then
 		rollButton.Text = "🎰 ROLLING..."
 		rollButton.BackgroundColor3 = C.Gray
+		rollGlow.Visible = false
 		return
 	end
 	local cost = Formulas.rollCost(data, area)
-	rollButton.Text = `🎰 ROLL\n<font size="24">{Format.money(cost)}</font>`
-	rollButton.BackgroundColor3 = if State.coins() >= cost then C.Red else Color3.fromRGB(170, 90, 100)
+	local affordable = State.coins() >= cost
+	rollButton.Text = `🎰 ROLL\n<font size="26">{Format.money(cost)}</font>`
+	rollButton.BackgroundColor3 = if affordable then C.Red else Color3.fromRGB(150, 96, 110)
+	rollGlow.Visible = affordable
 end
 
 local function updateStats()
@@ -140,31 +158,29 @@ local function updateStats()
 	if not data then
 		return
 	end
-	coinsPill.label.Text = `💰 {Format.money(State.coins())}`
+	coinsLabel.Text = `💰 {Format.money(State.coins())}`
 	if not RollUI.isBusy() then
 		local income = State.income()
 		if income > shownIncome and shownIncome > 0 then
-			Theme.pop(incomePill.frame, 1.2)
+			Theme.pop(statBar, 1.08)
 		end
 		shownIncome = income
-		incomePill.label.Text = `💵 +{Format.money(income)}/sec`
-		luckPill.label.Text = `🍀 {Format.multiplier(State.luck())} Luck`
+		incomeLabel.Text = `💵 +{Format.money(income)}/sec`
+		luckLabel.Text = `🍀 {Format.multiplier(State.luck())} Luck`
 	end
 
 	local pity = RollSystem.pityInfo(data.pity)
 	if pity.guaranteed then
-		pityLabel.Text = "🍀 NEXT ROLL: GUARANTEED LEGENDARY+!"
+		pityBar.fill.BackgroundColor3 = C.Gold
+		pityBar.set(1, "🍀 NEXT ROLL: GUARANTEED LEGENDARY+!")
 	else
-		local bonus = if pity.multiplier > 1
-			then `  <font color="#FFE066">(x{pity.multiplier} Legendary+)</font>`
-			else ""
-		pityLabel.Text = `🍀 LUCKY ROLLS: {pity.count}/{pity.target}{bonus}`
+		local bonus = if pity.multiplier > 1 then `  <font color="#FFE066">x{pity.multiplier} Legendary+</font>` else ""
+		pityBar.fill.BackgroundColor3 = C.Lime
+		pityBar.set(pity.count / pity.target, `🍀 LUCKY ROLLS: {pity.count}/{pity.target}{bonus}`)
 	end
 
 	local rebirthCost = Formulas.rebirthCost(data.rebirths)
-	rebirthButton.Text = if State.coins() >= rebirthCost
-		then '🔄 REBIRTH\n<font size="18">READY!</font>'
-		else "🔄 REBIRTH"
+	rebirthBadge.Visible = State.coins() >= rebirthCost
 	updateRollButton()
 	updateOdds()
 end
@@ -177,13 +193,9 @@ local function updateTimers()
 	local now = State.now()
 
 	local dailyIn = Formulas.dailyReadyAt(data) - now
-	if dailyIn <= 0 then
-		dailyButton.Text = '🎁 FREE ROLL\n<font size="20">READY!</font>'
-		dailyButton.BackgroundColor3 = C.Orange
-	else
-		dailyButton.Text = `🎁 FREE ROLL\n<font size="20">{Format.time(dailyIn)}</font>`
-		dailyButton.BackgroundColor3 = Color3.fromRGB(190, 150, 110)
-	end
+	dailyBadge.Visible = dailyIn <= 0
+	dailyTile.caption.Text = if dailyIn <= 0 then "FREE ROLL" else Format.time(dailyIn)
+	dailyTile.button.BackgroundColor3 = if dailyIn <= 0 then C.Orange else C.Gray
 
 	local boostLeft = data.boostUntil - now
 	local luckIn = data.freeBoostReadyAt - now
@@ -193,16 +205,16 @@ local function updateTimers()
 	else
 		boostLabel.Visible = false
 	end
-	if luckIn <= 0 then
-		freeLuckButton.Text = '🍀 FREE LUCK\n<font size="20">CLAIM!</font>'
-		freeLuckButton.BackgroundColor3 = C.Green
-	else
-		freeLuckButton.Text = `🍀 FREE LUCK\n<font size="20">{Format.time(luckIn)}</font>`
-		freeLuckButton.BackgroundColor3 = Color3.fromRGB(120, 170, 120)
-	end
+	luckBadge.Visible = luckIn <= 0
+	freeLuckTile.caption.Text = if luckIn <= 0 then "FREE LUCK" else Format.time(luckIn)
+	freeLuckTile.button.BackgroundColor3 = if luckIn <= 0 then C.Green else C.Gray
 
 	if not RollUI.isBusy() then
-		luckPill.label.Text = `🍀 {Format.multiplier(State.luck())} Luck`
+		luckLabel.Text = `🍀 {Format.multiplier(State.luck())} Luck`
+	end
+	-- The ROLL key breathes while you can afford a roll
+	if rollGlow.Visible then
+		rollGlow.BackgroundTransparency = 0.45 + 0.25 * math.sin(os.clock() * 3)
 	end
 end
 
@@ -220,86 +232,100 @@ end
 function MainUI.init()
 	local screen = Theme.screen("MainUI", 1)
 
-	-- Top stats
+	-- Top: one dark stat bar, the lucky rolls bar and the boost timer
 	local top = Theme.frame({
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 8),
-		Size = UDim2.fromOffset(700, 110),
+		Size = UDim2.fromOffset(640, 130),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	})
 	Theme.autoScale(top)
-	local stats = Theme.frame({ Size = UDim2.new(1, 0, 0, 58), BackgroundTransparency = 1, Parent = top })
-	Theme.list(stats, Enum.FillDirection.Horizontal, 10)
-	coinsPill = pill(stats, C.Gold, 270, 1)
-	incomePill = pill(stats, C.Green, 230, 2)
-	luckPill = pill(stats, C.Lime, 170, 3)
-	coinFloats = Theme.frame({ Size = UDim2.new(1, 0, 0, 58), BackgroundTransparency = 1, Parent = top })
-
-	pityLabel = Theme.label({
+	statBar = Theme.frame({
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 64),
-		Size = UDim2.fromOffset(520, 26),
-		Text = "",
+		Position = UDim2.fromScale(0.5, 0),
+		Size = UDim2.fromOffset(640, 62),
+		BackgroundColor3 = C.Panel,
+		BackgroundTransparency = 0.08,
 		Parent = top,
+	})
+	Theme.corner(statBar, 20)
+	Theme.stroke(statBar, C.Shadow, 3)
+	Theme.gradient(statBar, C.White)
+	Theme.list(
+		statBar,
+		Enum.FillDirection.Horizontal,
+		0,
+		Enum.HorizontalAlignment.Center,
+		Enum.VerticalAlignment.Center
+	)
+	coinsLabel = segment(statBar, 250, C.Gold, 1)
+	divider(statBar, 2)
+	incomeLabel = segment(statBar, 220, Color3.fromRGB(110, 236, 130), 3)
+	divider(statBar, 4)
+	luckLabel = segment(statBar, 160, C.Lime, 5)
+	coinFloats = Theme.frame({ Size = UDim2.new(1, 0, 0, 62), BackgroundTransparency = 1, Parent = top })
+
+	pityBar = Theme.progressBar({
+		size = UDim2.fromOffset(420, 30),
+		position = UDim2.new(0.5, 0, 0, 70),
+		anchor = Vector2.new(0.5, 0),
+		color = C.Lime,
+		parent = top,
 	})
 	boostLabel = Theme.label({
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 90),
-		Size = UDim2.fromOffset(360, 22),
+		Position = UDim2.new(0.5, 0, 0, 104),
+		Size = UDim2.fromOffset(300, 24),
+		BackgroundTransparency = 0,
+		BackgroundColor3 = Color3.fromRGB(40, 110, 50),
 		TextColor3 = C.Lime,
 		Visible = false,
 		Parent = top,
 	})
+	Theme.corner(boostLabel, 12)
 	Theme.textStroke(boostLabel, 2)
 
-	-- Left column
+	-- Left column: free stuff and odds
 	local left = Theme.frame({
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.5, 0),
-		Size = UDim2.fromOffset(180, 270),
+		Position = UDim2.new(0, 16, 0.5, 0),
+		Size = UDim2.fromOffset(96, 340),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	})
 	Theme.autoScale(left)
-	Theme.list(left, Enum.FillDirection.Vertical, 10, Enum.HorizontalAlignment.Left)
-	dailyButton = Theme.button({
-		text = "🎁 FREE ROLL",
+	Theme.list(left, Enum.FillDirection.Vertical, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center)
+	dailyTile = Theme.tile({
+		icon = "🎁",
+		caption = "FREE ROLL",
 		color = C.Orange,
-		size = UDim2.fromOffset(180, 80),
+		size = 84,
 		layoutOrder = 1,
 		parent = left,
 	})
-	freeLuckButton = Theme.button({
-		text = "🍀 FREE LUCK",
-		color = C.Green,
-		size = UDim2.fromOffset(180, 80),
-		layoutOrder = 2,
-		parent = left,
-	})
-	local oddsButton = Theme.button({
-		text = "📊 ODDS",
-		color = C.Blue,
-		size = UDim2.fromOffset(180, 60),
-		layoutOrder = 3,
-		parent = left,
-	})
+	freeLuckTile =
+		Theme.tile({ icon = "🍀", caption = "FREE LUCK", color = C.Green, size = 84, layoutOrder = 2, parent = left })
+	local oddsTile =
+		Theme.tile({ icon = "📊", caption = "ODDS", color = C.Blue, size = 84, layoutOrder = 3, parent = left })
+	dailyBadge = Theme.badge(dailyTile.button)
+	luckBadge = Theme.badge(freeLuckTile.button)
 
-	dailyButton.Activated:Connect(function()
+	dailyTile.button.Activated:Connect(function()
 		local data = State.data()
 		if data and Formulas.dailyReadyAt(data) <= State.now() then
 			RollUI.requestDailyRoll()
 		end
 	end)
-	freeLuckButton.Activated:Connect(function()
+	freeLuckTile.button.Activated:Connect(function()
 		Remote.call("ClaimFreeBoost")
 	end)
 
-	-- Bottom buttons
+	-- Bottom: menu tiles around the roll key
 	local bottom = Theme.frame({
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -12),
-		Size = UDim2.fromOffset(900, 136),
+		Position = UDim2.new(0.5, 0, 1, -10),
+		Size = UDim2.fromOffset(820, 150),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	})
@@ -307,84 +333,87 @@ function MainUI.init()
 	Theme.list(
 		bottom,
 		Enum.FillDirection.Horizontal,
-		12,
+		14,
 		Enum.HorizontalAlignment.Center,
 		Enum.VerticalAlignment.Bottom
 	)
 
-	local bookButton = Theme.button({
-		text = "🧠 BOOK",
-		color = C.Pink,
-		size = UDim2.fromOffset(130, 86),
-		layoutOrder = 1,
-		parent = bottom,
-	})
-	local shopButton = Theme.button({
-		text = "🛒 SHOP",
-		color = C.Green,
-		size = UDim2.fromOffset(130, 86),
-		layoutOrder = 2,
-		parent = bottom,
-	})
+	local bookTile =
+		Theme.tile({ icon = "🧠", caption = "BOOK", color = C.Pink, size = 86, layoutOrder = 1, parent = bottom })
+	local shopTile =
+		Theme.tile({ icon = "🛒", caption = "SHOP", color = C.Green, size = 86, layoutOrder = 2, parent = bottom })
 
 	local rollGroup =
-		Theme.frame({ Size = UDim2.fromOffset(300, 136), BackgroundTransparency = 1, LayoutOrder = 3, Parent = bottom })
-	local picker = Theme.frame({ Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = C.Dark, Parent = rollGroup })
-	Theme.corner(picker, 12)
-	Theme.stroke(picker, C.Shadow, 2)
+		Theme.frame({ Size = UDim2.fromOffset(300, 150), BackgroundTransparency = 1, LayoutOrder = 3, Parent = bottom })
+	local picker = Theme.frame({ Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = C.Panel, Parent = rollGroup })
+	Theme.corner(picker, 14)
+	Theme.stroke(picker, C.Shadow, 3)
 	local prevButton = Theme.button({
 		text = "◀",
 		color = C.Blue,
-		size = UDim2.fromOffset(44, 36),
-		position = UDim2.fromOffset(2, 2),
+		size = UDim2.fromOffset(44, 34),
+		position = UDim2.fromOffset(3, 3),
 		parent = picker,
 	})
 	local nextButton = Theme.button({
 		text = "▶",
 		color = C.Blue,
-		size = UDim2.fromOffset(44, 36),
-		position = UDim2.new(1, -46, 0, 2),
+		size = UDim2.fromOffset(44, 34),
+		position = UDim2.new(1, -47, 0, 3),
 		parent = picker,
 	})
 	areaLabel = Theme.label({
-		Position = UDim2.fromOffset(50, 4),
-		Size = UDim2.new(1, -100, 1, -8),
+		Position = UDim2.fromOffset(52, 5),
+		Size = UDim2.new(1, -104, 1, -10),
 		Text = "",
 		Parent = picker,
 	})
+	rollGlow = Theme.frame({
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0, 98),
+		Size = UDim2.new(1, 22, 0, 112),
+		BackgroundColor3 = C.Gold,
+		BackgroundTransparency = 0.5,
+		Parent = rollGroup,
+	})
+	Theme.corner(rollGlow, 28)
 	rollButton = Theme.button({
 		text = "🎰 ROLL",
 		color = C.Red,
-		size = UDim2.new(1, 0, 0, 90),
-		position = UDim2.fromOffset(0, 46),
+		size = UDim2.new(1, 0, 0, 98),
+		position = UDim2.fromOffset(0, 49),
 		parent = rollGroup,
 	})
+	Theme.corner(rollButton, 22)
 
-	local upgradeButton = Theme.button({
-		text = "⬆️ UPGRADES",
+	local upgradeTile = Theme.tile({
+		icon = "⬆️",
+		caption = "UPGRADES",
 		color = C.Blue,
-		size = UDim2.fromOffset(130, 86),
+		size = 86,
 		layoutOrder = 4,
 		parent = bottom,
 	})
-	rebirthButton = Theme.button({
-		text = "🔄 REBIRTH",
+	rebirthTile = Theme.tile({
+		icon = "🔄",
+		caption = "REBIRTH",
 		color = C.Purple,
-		size = UDim2.fromOffset(130, 86),
+		size = 86,
 		layoutOrder = 5,
 		parent = bottom,
 	})
+	rebirthBadge = Theme.badge(rebirthTile.button)
 
-	bookButton.Activated:Connect(function()
+	bookTile.button.Activated:Connect(function()
 		Theme.togglePanel("Collection")
 	end)
-	shopButton.Activated:Connect(function()
+	shopTile.button.Activated:Connect(function()
 		Theme.togglePanel("Shop", "Cosmetics")
 	end)
-	upgradeButton.Activated:Connect(function()
+	upgradeTile.button.Activated:Connect(function()
 		Theme.togglePanel("Shop", "Upgrades")
 	end)
-	rebirthButton.Activated:Connect(function()
+	rebirthTile.button.Activated:Connect(function()
 		Theme.togglePanel("Rebirth")
 	end)
 	rollButton.Activated:Connect(roll)
@@ -398,16 +427,17 @@ function MainUI.init()
 	-- Odds panel
 	oddsPanel = Theme.frame({
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -12, 0.5, 0),
-		Size = UDim2.fromOffset(330, 400),
-		BackgroundColor3 = C.Dark,
-		BackgroundTransparency = 0.1,
+		Position = UDim2.new(1, -16, 0.5, 0),
+		Size = UDim2.fromOffset(340, 410),
+		BackgroundColor3 = C.Panel,
+		BackgroundTransparency = 0.06,
 		Visible = false,
 		Parent = screen,
 	})
-	Theme.corner(oddsPanel, 18)
+	Theme.corner(oddsPanel, 20)
 	Theme.stroke(oddsPanel, C.Shadow, 3)
-	Theme.padding(oddsPanel, 10)
+	Theme.gradient(oddsPanel, C.White)
+	Theme.padding(oddsPanel, 12)
 	Theme.autoScale(oddsPanel)
 	Theme.list(oddsPanel, Enum.FillDirection.Vertical, 4)
 	oddsTitle = Theme.label({ Size = UDim2.new(1, 0, 0, 34), LayoutOrder = 1, Parent = oddsPanel })
@@ -432,7 +462,7 @@ function MainUI.init()
 		LayoutOrder = 21,
 		Parent = oddsPanel,
 	})
-	oddsButton.Activated:Connect(function()
+	oddsTile.button.Activated:Connect(function()
 		oddsPanel.Visible = not oddsPanel.Visible
 		if oddsPanel.Visible then
 			Theme.pop(oddsPanel, 0.9)
