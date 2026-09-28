@@ -144,7 +144,14 @@ function RollService.init()
 		end
 
 		lastRollAt[player] = os.clock()
-		return { ok = true, result = performRoll(player, data, area, free, nil, if free then "Daily" else "Machine") }
+		local result = performRoll(player, data, area, free, nil, if free then "Daily" else "Machine")
+		-- Everyone nearby sees the machine spin up, then flash the rarity when the reveal lands.
+		Net.event("Effect"):FireAllClients("MachineRoll", {
+			areaId = area.id,
+			rarity = result.rarity,
+			duration = RollService.revealDelay(result.rarity, result.speed),
+		})
+		return { ok = true, result = result }
 	end)
 end
 
