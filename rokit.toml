@@ -1,0 +1,7 @@
+# Toolchain for this project, managed by Rokit (https://github.com/rojo-rbx/rokit).
+# Run `rokit install` to install these exact versions.
+
+[tools]
+rojo = "rojo-rbx/rojo@7.7.0"
+selene = "Kampfkarren/selene@0.31.0"
+stylua = "JohnnyMorganz/StyLua@2.5.2"

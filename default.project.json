@@ -1,0 +1,47 @@
+{
+	"name": "prison-brainrot",
+	"tree": {
+		"$className": "DataModel",
+
+		"ReplicatedStorage": {
+			"Shared": {
+				"$path": "src/shared"
+			}
+		},
+
+		"ServerScriptService": {
+			"Server": {
+				"$path": "src/server"
+			}
+		},
+
+		"StarterPlayer": {
+			"StarterPlayerScripts": {
+				"Client": {
+					"$path": "src/client"
+				}
+			}
+		},
+
+		"Workspace": {
+			"Baseplate": {
+				"$className": "Part",
+				"$properties": {
+					"Anchored": true,
+					"Color": [0.38823, 0.37254, 0.38823],
+					"Locked": true,
+					"Position": [0, -10, 0],
+					"Size": [512, 20, 512]
+				}
+			},
+			"SpawnLocation": {
+				"$className": "SpawnLocation",
+				"$properties": {
+					"Anchored": true,
+					"Position": [0, 0.5, 0],
+					"Size": [12, 1, 12]
+				}
+			}
+		}
+	}
+}
