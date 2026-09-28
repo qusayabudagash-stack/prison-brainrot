@@ -424,6 +424,46 @@ end
 
 BrainrotData.Count = #BrainrotData.Brainrots
 
+-- Ids from a later version of the roster that was rolled back, and the Brainrot each one maps to.
+-- Saves that picked them up are moved back to these ids when they load (see DataService).
+BrainrotData.LegacyIds = {
+	TimCheese = "PotatoPrisoner",
+	LiriliLarila = "ChickenThief",
+	TrippiTroppi = "BananaJailbird",
+	SvininoBombondino = "SockSnatcher",
+	TalpaDiFerro = "BreadBandit",
+	BonecaAmbalabu = "PrisonFrog",
+	BobritoBandito = "EscapeDuck",
+	BurbaloniLuliloli = "PizzaCriminal",
+	CactoHipopotamo = "DonutDetainee",
+	OrangutiniAnanassini = "CactusCrook",
+	RhinoToasterino = "CellBlockGoblin",
+	BrrBrrPatapim = "RichPrisoner",
+	GlorboFruttodrillo = "JuiceSmuggler",
+	BlueberriniOctopussini = "RoboRascal",
+	SpioniroGolubiro = "CheeseEscapee",
+	ChimpanziniBananini = "AlienPrisoner",
+	CappuccinoAssassino = "DiamondCriminal",
+	CocofantoElefanto = "ClownConvict",
+	TrulimeroTrulicina = "NinjaNoodle",
+	BananitaDolphinita = "PirateParrot",
+	BallerinaCappuccina = "PrisonKing",
+	TungTungTungSahur = "ElectricInmate",
+	BombombiniGusini = "GoldenWarden",
+	GirafaCelestre = "DragonDropout",
+	BombardiroCrocodilo = "CosmicPrisoner",
+	ChefCrabracadabra = "SkullBoss",
+	EspressonaSignora = "IQInmate",
+	FrigoCamelo = "VolcanoVillain",
+	TralaleroTralala = "GalaxyWarden",
+	DragonCannelloni = "RainbowCriminal",
+	LosTralaleritos = "HaloHooligan",
+	LaVacaSaturnoSaturnita = "SecretBrainrot",
+} :: { [string]: string }
+for legacyId, id in BrainrotData.LegacyIds do
+	assert(BrainrotData.ById[id], `Legacy id {legacyId} maps to unknown Brainrot {id}`)
+end
+
 function BrainrotData.getRarity(brainrotId: string): Rarity
 	return BrainrotData.RarityById[BrainrotData.ById[brainrotId].rarity]
 end

@@ -548,6 +548,40 @@ T.run(function()
 	check("warns about it", #engine.warnings > warningsBefore)
 
 	---------------------------------------------------------------------------
+	section("Saves from the rolled-back roster")
+	---------------------------------------------------------------------------
+	local laterRecord = DataService.template() :: any
+	laterRecord.brainrots = {
+		TimCheese = { Normal = 2, Golden = 1, Diamond = 0 },
+		PotatoPrisoner = { Normal = 1, Golden = 0, Diamond = 0 },
+		TralaleroTralala = { Normal = 1, Golden = 1, Diamond = 0 },
+	}
+	laterRecord.discovered = { TimCheese = true, PotatoPrisoner = true, TralaleroTralala = true }
+	laterRecord.variantsFound = { TimCheese = { Golden = true }, TralaleroTralala = { Golden = true } }
+	engine.storage[STORE]["Player_2003"] = laterRecord
+	local erin, erinData = join(2003, "Erin")
+	check(
+		"Brainrots from the later roster keep their counts",
+		erinData.brainrots.PotatoPrisoner.Normal == 3 and erinData.brainrots.PotatoPrisoner.Golden == 1
+	)
+	check(
+		"their ids are removed",
+		erinData.brainrots.TimCheese == nil
+			and erinData.discovered.TralaleroTralala == nil
+			and erinData.variantsFound.TralaleroTralala == nil
+	)
+	check(
+		"their discoveries are kept",
+		erinData.discovered.GalaxyWarden == true and erinData.brainrots.GalaxyWarden.Golden == 1
+	)
+	check(
+		"their variants are kept",
+		erinData.variantsFound.PotatoPrisoner.Golden == true and erinData.variantsFound.GalaxyWarden.Golden == true
+	)
+	engine:removePlayer(erin)
+	task.wait(0.2)
+
+	---------------------------------------------------------------------------
 	section("DataStore outage")
 	---------------------------------------------------------------------------
 	engine.dataStoreFailures = 1
