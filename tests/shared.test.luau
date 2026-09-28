@@ -5,6 +5,9 @@
 
 local fs = require("@lune/fs")
 local process = require("@lune/process")
+local roblox = require("@lune/roblox")
+
+local Instance, Vector3, CFrame = roblox.Instance, roblox.Vector3, roblox.CFrame
 
 local Engine = require("./engine")
 local T = require("./testing")
@@ -76,8 +79,8 @@ T.run(function()
 		incomeOrdered = incomeOrdered and highMin > lowMax
 	end
 	check("every rarity earns more than the one below", incomeOrdered)
-	check("Potato Prisoner earns $5/sec", BrainrotData.ById.PotatoPrisoner.income == 5)
-	check("Prison King earns $1,000/sec", BrainrotData.ById.PrisonKing.income == 1000)
+	check("Tim Cheese earns $5/sec", BrainrotData.ById.TimCheese.income == 5)
+	check("Ballerina Cappuccina earns $1,000/sec", BrainrotData.ById.BallerinaCappuccina.income == 1000)
 
 	---------------------------------------------------------------------------
 	section("Odds, luck and pity")
@@ -199,8 +202,8 @@ T.run(function()
 	---------------------------------------------------------------------------
 	local data = {
 		brainrots = {
-			PotatoPrisoner = { Normal = 20, Golden = 1, Diamond = 0 },
-			PrisonKing = { Normal = 1, Golden = 0, Diamond = 0 },
+			TimCheese = { Normal = 20, Golden = 1, Diamond = 0 },
+			BallerinaCappuccina = { Normal = 1, Golden = 0, Diamond = 0 },
 		},
 		upgrades = { Income = 0, Luck = 0, Discount = 0, Capacity = 0, Speed = 0 },
 		discovered = {},
@@ -212,7 +215,7 @@ T.run(function()
 	}
 	check("capacity starts at 8", Formulas.capacity(data) == 8)
 	check(
-		"only the best 8 earn: King + Golden Potato + 6 Potatoes",
+		"only the best 8 earn: Ballerina + Golden Tim Cheese + 6 Tim Cheeses",
 		Formulas.baseIncome(data) == 1000 + 10 + 6 * 5,
 		Formulas.baseIncome(data)
 	)
@@ -239,7 +242,18 @@ T.run(function()
 	---------------------------------------------------------------------------
 	section("Brainrot models")
 	---------------------------------------------------------------------------
-	local built, maxParts, problems = 0, 0, {}
+	-- Rarer Brainrots get more detail, but even the fanciest has to stay cheap to show in every cell.
+	local BUDGET = {
+		Common = 100,
+		Uncommon = 110,
+		Rare = 120,
+		Epic = 135,
+		Legendary = 150,
+		Mythic = 165,
+		Divine = 190,
+		Secret = 210,
+	}
+	local built, maxParts, problems, overBudget = 0, 0, {}, {}
 	for _, brainrot in BrainrotData.Brainrots do
 		for _, variant in BrainrotData.Variants do
 			for _, options in { { variant = variant.id }, { variant = variant.id, welded = true, scale = 2.5 } } do
@@ -266,6 +280,9 @@ T.run(function()
 					end
 				end
 				maxParts = math.max(maxParts, parts)
+				if variant.id == "Normal" and not options.welded and parts > BUDGET[brainrot.rarity] then
+					table.insert(overBudget, `{brainrot.id} {parts}/{BUDGET[brainrot.rarity]}`)
+				end
 				if not model.PrimaryPart or not model:FindFirstChild("Body") then
 					table.insert(problems, `{brainrot.id}: missing Root or Body`)
 				end
@@ -274,6 +291,33 @@ T.run(function()
 	end
 	print(`  (built {built} models, biggest has {maxParts} parts)`)
 	check("every Brainrot builds in every variant", #problems == 0, table.concat(problems, "; "))
-	-- Rarer Brainrots get more detail and effects, but even the fanciest has to stay cheap to show in every cell.
-	check("models stay within the part budget (< 120 parts)", maxParts < 120, maxParts)
+	check("models stay within their rarity's part budget", #overBudget == 0, table.concat(overBudget, ", "))
+
+	-- A model dropped into ReplicatedStorage.BrainrotAssets replaces the built-in design
+	local assets = Instance.new("Folder")
+	assets.Name = "BrainrotAssets"
+	local asset = Instance.new("Model")
+	asset.Name = "TimCheese"
+	local mesh = Instance.new("Part")
+	mesh.Name = "Body"
+	mesh.Size = Vector3.new(2, 3, 2)
+	mesh.CFrame = CFrame.new(10, 20, 30)
+	mesh.CanCollide = true
+	mesh.Parent = asset
+	asset.Parent = assets
+	assets.Parent = engine.ReplicatedStorage
+	local custom = BrainrotModel.build("TimCheese")
+	local customBody = custom:FindFirstChild("Body") :: BasePart
+	check(
+		"an asset override replaces the design",
+		customBody ~= nil and customBody.Size == Vector3.new(2, 3, 2) and custom:FindFirstChild("Cheese") == nil
+	)
+	check(
+		"the override stands on the ground, centered, and doesn't collide",
+		customBody ~= nil
+			and math.abs(customBody.CFrame.Position.Y - 1.5) < 0.01
+			and math.abs(customBody.CFrame.Position.X) < 0.01
+			and not customBody.CanCollide
+	)
+	assets:Destroy()
 end)

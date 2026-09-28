@@ -1,4 +1,4 @@
--- UNCOMMON Brainrots: more accessories, more personality.
+-- UNCOMMON Brainrots: two ideas mashed into one body, with a prop or costume detail on top.
 
 local Kit = require(script.Parent.Kit)
 local Parts = require(script.Parent.Parts)
@@ -11,392 +11,421 @@ local v3 = Vector3.new
 
 local Uncommon: { [string]: (Kit) -> BasePart } = {}
 
-Uncommon.PrisonFrog = function(k)
-	local green = rgb(95, 195, 85)
-	local greenDark = rgb(60, 150, 65)
-	local belly = rgb(200, 238, 160)
-	local shell: Kit.Shell = { center = v3(0, 2.35, 0), radii = v3(1.85, 1.4, 1.6) }
-	-- Lower body in the jumpsuit: about as wide as the frog, so it reads as pants, not a swim ring
-	local suit: Kit.Shell = { center = v3(0, 1.55, 0), radii = v3(1.8, 1.0, 1.55) }
+local SKIN = rgb(236, 190, 150)
 
-	local body = k:ellipsoid("Body", shell.radii * 2, CFrame.new(shell.center), green, nil, "Body")
-	k:ellipsoid("Belly", v3(2.2, 1.5, 0.6), Kit.on(shell, 0, 5, -0.25), belly, nil, "Body")
-	for _, spot in { { 60, 40 }, { -70, 30 }, { 150, 45 }, { -130, 55 } } do
-		k:ellipsoid("Spot", v3(0.5, 0.4, 0.1), Kit.on(shell, spot[1], spot[2], -0.02), greenDark, nil, "Body")
+---------------------------------------------------------------------------
+-- Boneca Ambalabu: a frog riding in a car tire, on human legs
+---------------------------------------------------------------------------
+
+Uncommon.BonecaAmbalabu = function(k: Kit): BasePart
+	local FROG = rgb(112, 198, 92)
+	local FROG_LIGHT = rgb(214, 238, 168)
+	local TIRE = rgb(42, 42, 50)
+	local TREAD = rgb(62, 62, 72)
+	local HUB = rgb(205, 210, 222)
+
+	for _, side in { -1, 1 } do
+		k:loft("Leg", {
+			{ at = v3(side * 0.45, 1.5, 0), w = 0.3, h = 0.3 },
+			{ at = v3(side * 0.5, 0.95, -0.06), w = 0.25, h = 0.25 },
+			{ at = v3(side * 0.52, 0.48, 0), w = 0.22, h = 0.22 },
+		}, SKIN, nil, "Legs", { density = 3, overlap = 7 })
+		Parts.sneaker(k, v3(side * 0.52, 0, 0), 0.82, { upper = rgb(225, 60, 60) }, "Legs", side * 8)
 	end
 
-	k:ellipsoid("Jumpsuit", suit.radii * 2, CFrame.new(suit.center), C.Jumpsuit, Enum.Material.Fabric, "Body")
-	k:band("Collar", suit, 1.9, 0.24, C.JumpsuitDark, Enum.Material.Fabric, "Body")
-	k:badge(Kit.on(suit, 0, -8, 0.02), "#007", 0.9, "Body")
-
-	-- Bulging eyes on top, half-lidded and smug
-	for _, side in { -1, 1 } do
-		local bump: Kit.Shell = { center = v3(side * 0.82, 3.55, -0.45), radii = v3(0.72, 0.68, 0.7) }
-		k:ellipsoid("EyeBump", bump.radii * 2, CFrame.new(bump.center), green, nil, "Body")
-		k:eye(Kit.on(bump, side * 8, 10, -0.08), {
-			width = 0.95,
-			height = 1.0,
-			iris = rgb(200, 150, 30),
-			look = Vector2.new(0.3, 0),
-			lid = 0.42,
-			lidTilt = -6,
-			skin = green,
-			side = side,
-		}, "Body")
-		k:blush(Kit.on(shell, 42 * side, 20, -0.02), 0.6, "Body")
-	end
-	k:mouth(Kit.on(shell, 0, 16, -0.03), { width = 2.1, height = 0.62, skin = green, style = "Smile" }, "Body")
-	k:ellipsoid("TongueOut", v3(0.42, 0.55, 0.2), Kit.on(shell, 22, 11, 0.02), C.Tongue, nil, "Body")
-
-	-- Tiny tilted prison cap between the eyes
-	Parts.prisonCap(k, CFrame.new(0, 3.62, 0.25) * CFrame.Angles(0, 0, math.rad(12)), 0.95, "Body")
-
-	-- Arms: one holding a spoon for digging out
-	Parts.bareArm(k, "ArmR", v3(1.6, 2.3, -0.1), v3(2.25, 2.95, -0.6), 0.36, green, 0.48)
-	k:limb(
-		"SpoonHandle",
-		v3(2.25, 2.7, -0.6),
-		v3(2.3, 3.9, -0.7),
-		0.14,
-		rgb(200, 205, 215),
-		Enum.Material.Metal,
-		"ArmR"
+	-- The tire, hubcap facing forward
+	local center = v3(0, 2.3, 0)
+	local body = k:cylinder(
+		"Tire",
+		1.0,
+		2.3,
+		CFrame.new(center) * CFrame.Angles(math.pi / 2, 0, 0),
+		TIRE,
+		Enum.Material.Rubber,
+		"Body"
 	)
-	k:ellipsoid(
-		"SpoonBowl",
-		v3(0.42, 0.62, 0.18),
-		CFrame.new(2.31, 4.15, -0.72),
-		rgb(210, 215, 225),
-		Enum.Material.Metal,
-		"ArmR"
-	)
-	Parts.bareArm(k, "ArmL", v3(-1.6, 2.3, -0.1), v3(-2.05, 1.55, -0.45), 0.36, green, 0.48)
-
-	-- Folded frog legs and big webbed feet
-	for _, side in { -1, 1 } do
-		k:ellipsoid(
-			"Thigh",
-			v3(0.9, 1.1, 1.5),
-			CFrame.new(side * 1.35, 1.0, 0.1) * CFrame.Angles(math.rad(-20), 0, math.rad(15 * side)),
-			green,
-			nil,
-			"Legs"
+	for i = 0, 13 do
+		local angle = i * math.pi * 2 / 14
+		k:part(
+			"Tread",
+			v3(0.26, 0.14, 1.04),
+			CFrame.new(center) * CFrame.Angles(0, 0, angle) * CFrame.new(0, 1.13, 0),
+			TREAD,
+			Enum.Material.Rubber,
+			"Body"
 		)
-		local foot = v3(side * 1.1, 0.12, -0.55)
-		k:ellipsoid("Foot", v3(1.1, 0.24, 1.2), CFrame.new(foot), greenDark, nil, "Legs")
-		for _, toe in { -0.38, 0, 0.38 } do
-			k:ball("Toe", 0.3, foot + v3(toe, 0.08, -0.62), greenDark, nil, "Legs")
-		end
 	end
+	local face = CFrame.new(center + v3(0, 0, -0.5)) * CFrame.Angles(0, math.pi, 0)
+	k:disc("Rim", 1.5, 0.06, face, rgb(120, 124, 138), Enum.Material.Metal, "Body")
+	k:disc("Hubcap", 1.12, 0.12, face * CFrame.new(0, 0, 0.04), HUB, Enum.Material.Metal, "Body")
+	for i = 0, 4 do
+		local angle = i * math.pi * 2 / 5
+		k:ball(
+			"Bolt",
+			0.14,
+			(face * CFrame.new(math.cos(angle) * 0.3, math.sin(angle) * 0.3, 0.12)).Position,
+			rgb(90, 95, 110),
+			Enum.Material.Metal,
+			"Body"
+		)
+	end
+
+	-- Frog head on top, hands gripping the tire
+	local head: Kit.Shell = { center = v3(0, 3.72, -0.05), radii = v3(0.98, 0.64, 0.82) }
+	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center), FROG, nil, "Body")
+	k:ellipsoid("Chin", v3(1.7, 0.7, 1.4), CFrame.new(0, 3.55, -0.12), FROG_LIGHT, nil, "Body")
+	for _, side in { -1, 1 } do
+		local bump: Kit.Shell = { center = v3(side * 0.48, 4.22, -0.18), radii = v3(0.36, 0.34, 0.34) }
+		k:ellipsoid("EyeBump", bump.radii * 2, CFrame.new(bump.center), FROG, nil, "Body")
+		k:eye(
+			Kit.on(bump, side * 8, 6, -0.06),
+			{ width = 0.44, height = 0.46, iris = rgb(40, 34, 30), side = side },
+			"Body"
+		)
+		k:ball("Nostril", 0.07, v3(side * 0.14, 3.86, -0.86), rgb(50, 90, 45), nil, "Body")
+		k:blush(Kit.on(head, side * 48, -6, 0.02), 0.28, "Body")
+		local rig = if side < 0 then "ArmL" else "ArmR"
+		local shoulder, hand = v3(side * 0.78, 3.35, -0.2), v3(side * 1.18, 2.72, -0.52)
+		k:limb("Arm", shoulder, hand, 0.2, FROG, nil, rig)
+		for f = -1, 1 do
+			k:ball("Finger", 0.16, hand + v3(side * 0.06, -0.08, f * 0.12 - 0.05), FROG, nil, rig)
+		end
+		k.model:SetAttribute(rig .. "Joint", shoulder)
+	end
+	k:mouth(
+		Kit.on(head, 0, -24, 0),
+		{ width = 1.05, height = 0.2, skin = FROG_LIGHT, style = "Smile", radius = 0.9 },
+		"Body"
+	)
 	return body
 end
 
-Uncommon.EscapeDuck = function(k)
-	local yellow = rgb(255, 214, 60)
-	local orange = rgb(255, 140, 35)
-	local shell: Kit.Shell = { center = v3(0, 2.35, 0.05), radii = v3(1.45, 1.4, 1.5) }
-	local head: Kit.Shell = { center = v3(0, 4.0, -0.25), radii = v3(1.08, 1.02, 1.02) }
+---------------------------------------------------------------------------
+-- Bobrito Bandito: a beaver bandit with a fedora and a bag of loot
+---------------------------------------------------------------------------
 
-	local body = k:ellipsoid("Body", shell.radii * 2, CFrame.new(shell.center), yellow, nil, "Body")
-	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center), yellow, nil, "Body")
-	k:limb("TailTuft", v3(0, 2.6, 1.3), v3(0, 3.2, 1.8), 0.55, yellow, nil, "Body")
-	k:badge(Kit.on(shell, 0, 22, 0.02), "#010", 0.8, "Body")
+Uncommon.BobritoBandito = function(k: Kit): BasePart
+	local BEAVER = rgb(152, 102, 66)
+	local MUZZLE = rgb(214, 172, 128)
+	local HAT = rgb(62, 56, 56)
+	local MASK = rgb(30, 30, 38)
+	local BANDANA = rgb(214, 54, 54)
 
-	-- Face, bill and swim goggles pushed up on the forehead
+	for _, side in { -1, 1 } do
+		k:limb("Leg", v3(side * 0.45, 0.7, 0), v3(side * 0.5, 0.25, 0), 0.4, BEAVER, nil, "Legs")
+		k:ellipsoid("Foot", v3(0.62, 0.22, 0.9), CFrame.new(side * 0.55, 0.11, -0.22), rgb(70, 52, 48), nil, "Legs")
+	end
+	local shell: Kit.Shell = { center = v3(0, 1.55, 0), radii = v3(0.88, 1.0, 0.8) }
+	local body = k:ellipsoid("Body", shell.radii * 2, CFrame.new(shell.center), BEAVER, Enum.Material.Fabric, "Body")
+	Parts.patch(k, "Belly", shell, 0, -12, 1.0, 1.25, MUZZLE, Enum.Material.Fabric, "Body")
+	-- Flat paddle tail
+	k:ellipsoid(
+		"Tail",
+		v3(1.0, 0.2, 1.6),
+		CFrame.new(0, 0.55, 1.3) * CFrame.Angles(math.rad(-28), 0, 0),
+		rgb(84, 64, 60),
+		Enum.Material.Leather,
+		"Body"
+	)
+
+	local head: Kit.Shell = { center = v3(0, 2.9, -0.05), radii = v3(0.78, 0.7, 0.72) }
+	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center), BEAVER, Enum.Material.Fabric, "Body")
+	k:ellipsoid("Muzzle", v3(0.95, 0.62, 0.6), CFrame.new(0, 2.66, -0.6), MUZZLE, nil, "Body")
+	k:ellipsoid("Nose", v3(0.34, 0.22, 0.2), CFrame.new(0, 2.84, -0.9), rgb(50, 36, 36), nil, "Body")
+	for _, side in { -1, 1 } do
+		k:part("BuckTooth", v3(0.15, 0.26, 0.06), CFrame.new(side * 0.085, 2.38, -0.84), C.White, nil, "Body")
+		k:ball("Ear", 0.32, v3(side * 0.6, 3.42, 0.05), BEAVER, nil, "Body")
+	end
+	k:mouth(
+		CFrame.new(0, 2.54, -0.86),
+		{ width = 0.4, height = 0.12, skin = MUZZLE, style = "Smirk", radius = 0.4 },
+		"Body"
+	)
+	-- Bandit mask, sly eyes, fedora and bandana
+	k:band("Mask", head, 3.06, 0.24, MASK, Enum.Material.Fabric, "Body")
 	k:eyes(
 		head,
 		26,
 		12,
-		{ width = 0.62, height = 0.74, iris = rgb(60, 110, 200), look = Vector2.new(0, 0.3), skin = yellow },
+		{ width = 0.34, height = 0.38, iris = rgb(60, 40, 30), lid = 0.35, lidTilt = 14, skin = MASK },
 		"Body"
 	)
-	local bill = Kit.on(head, 0, -10, 0.2)
-	k:ellipsoid("Bill", v3(1.1, 0.34, 0.95), bill, orange, nil, "Body")
-	k:ellipsoid(
-		"BillLower",
-		v3(0.9, 0.24, 0.7),
-		bill * CFrame.new(0, -0.25, 0.1) * CFrame.Angles(math.rad(18), 0, 0),
-		orange:Lerp(Color3.new(0, 0, 0), 0.1),
-		nil,
-		"Body"
-	)
-	for _, side in { -1, 1 } do
-		k:ball("Nostril", 0.08, (bill * CFrame.new(side * 0.15, 0.12, -0.44)).Position, rgb(150, 70, 20), nil, "Body")
-		k:blush(Kit.on(head, 42 * side, -4, -0.02), 0.45, "Body")
-	end
-	k:band("GoggleStrap", head, 4.55, 0.2, rgb(40, 110, 220), nil, "Body")
-	for _, side in { -1, 1 } do
-		local lens = Kit.on(head, 22 * side, 38, 0.05)
-		k:disc("GoggleRim", 0.62, 0.16, lens, rgb(40, 110, 220), nil, "Body")
-		k:disc("GoggleLens", 0.48, 0.2, lens * CFrame.new(0, 0, -0.03), rgb(150, 230, 255), Enum.Material.Glass, "Body")
-	end
-
-	-- Inflatable swim ring around the waist
-	for i = 0, 15 do
-		local angle = i * math.pi * 2 / 16
-		local color = if (i // 2) % 2 == 0 then rgb(235, 55, 60) else C.White
-		k:ellipsoid(
-			"SwimRing",
-			v3(0.85, 0.72, 0.85),
-			CFrame.new(math.cos(angle) * 1.62, 1.95, math.sin(angle) * 1.66),
-			color,
-			nil,
-			"Body"
-		)
-	end
-
-	Parts.bareArm(k, "ArmR", v3(1.35, 2.75, 0), v3(2.15, 3.35, -0.35), 0.42, yellow, 0.52)
-	Parts.bareArm(k, "ArmL", v3(-1.35, 2.75, 0), v3(-2.1, 3.3, -0.3), 0.42, yellow, 0.52)
-	Parts.birdLegs(k, 1.2, 0.55, orange)
-	for _, side in { -1, 1 } do
-		k:ellipsoid("Webbing", v3(0.95, 0.12, 0.9), CFrame.new(side * 0.55, 0.1, -0.4), orange, nil, "Legs")
-	end
-	return body
-end
-
-Uncommon.PizzaCriminal = function(k)
-	local cheese = rgb(255, 205, 85)
-	local crust = rgb(205, 135, 60)
-	local width, height, thick = 1.75, 3.3, 0.55
-	local baseY = 1.55
-	local center = baseY + height / 2
-
-	-- Upright slice: two mirrored wedges make the triangle, tip up
-	local body = k:wedge(
-		"Body",
-		v3(thick, height, width),
-		CFrame.new(width / 2, center, 0) * CFrame.Angles(0, -math.pi / 2, 0),
-		cheese,
-		nil,
-		"Body"
-	)
-	k:wedge(
-		"SliceLeft",
-		v3(thick, height, width),
-		CFrame.new(-width / 2, center, 0) * CFrame.Angles(0, math.pi / 2, 0),
-		cheese,
-		nil,
-		"Body"
-	)
-	k:cylinder(
-		"Crust",
-		width * 2 + 0.3,
-		0.85,
-		CFrame.new(0, baseY, 0.05) * CFrame.Angles(0, 0, math.pi / 2),
-		crust,
-		nil,
-		"Body"
-	)
-	for _, drip in { v3(-0.9, 1.9, -0.3), v3(0.4, 2.0, -0.3), v3(1.1, 1.95, -0.3) } do
-		k:ellipsoid("CheeseDrip", v3(0.3, 0.55, 0.22), CFrame.new(drip - v3(0, 0.3, 0)), cheese, nil, "Body")
-	end
-	for _, spot in { v3(-0.85, 2.45, -0.3), v3(0.85, 2.5, -0.3), v3(0.15, 4.05, -0.3), v3(-0.3, 2.05, -0.3) } do
-		k:disc("Pepperoni", 0.55, 0.08, CFrame.new(spot), rgb(205, 55, 45), nil, "Body")
-	end
-	for _, spot in { v3(0.5, 3.6, -0.3), v3(-0.95, 1.95, -0.3) } do
-		k:disc("Olive", 0.26, 0.08, CFrame.new(spot), rgb(40, 40, 40), nil, "Body")
-		k:disc("OliveHole", 0.1, 0.1, CFrame.new(spot), rgb(110, 90, 60), nil, "Body")
-	end
-
-	-- Face
-	for _, side in { -1, 1 } do
-		k:eye(CFrame.new(side * 0.42, 3.05, -0.3), {
-			width = 0.52,
-			height = 0.62,
-			iris = rgb(90, 60, 30),
-			look = Vector2.new(-0.4, 0),
-			lid = 0.28,
-			lidTilt = 15,
-			skin = cheese,
-			side = side,
-		}, "Body")
-		k:brow(CFrame.new(side * 0.44, 3.5, -0.3), 0.46, 18 * side, rgb(150, 80, 30), "Body")
-	end
-	k:mouth(CFrame.new(0, 2.6, -0.3), { width = 0.7, height = 0.34, skin = cheese, style = "Smirk" }, "Body")
-
-	-- Chef hat on the tip, rolling pin in hand
-	k:cylinder(
-		"ChefHatBand",
-		0.35,
-		0.72,
-		CFrame.new(0, 5.0, 0) * CFrame.Angles(0, 0, math.rad(-12)),
-		C.White,
+	k:oval(
+		"HatBrim",
+		CFrame.new(0, 3.48, 0) * CFrame.Angles(math.rad(-6), 0, 0),
+		2.0,
+		1.9,
+		0.1,
+		HAT,
 		Enum.Material.Fabric,
 		"Body"
 	)
-	k:ellipsoid(
-		"ChefHatPuff",
-		v3(1.05, 0.72, 1.0),
-		CFrame.new(0.08, 5.35, 0) * CFrame.Angles(0, 0, math.rad(-12)),
-		C.White,
-		Enum.Material.Fabric,
-		"Body"
-	)
-	Parts.bareArm(k, "ArmR", v3(1.35, 2.3, 0), v3(1.95, 2.8, -0.5), 0.3, crust, 0.44)
-	k:limb("RollingPin", v3(1.6, 2.35, -0.6), v3(2.3, 3.45, -0.55), 0.36, rgb(200, 150, 90), Enum.Material.Wood, "ArmR")
-	Parts.bareArm(k, "ArmL", v3(-1.35, 2.3, 0), v3(-1.9, 1.65, -0.2), 0.3, crust, 0.44)
-
-	Parts.legs(k, 1.4, 0.55, 0.4, crust, rgb(220, 40, 50), C.White, 0.8, crust)
-	return body
-end
-
-Uncommon.DonutDetainee = function(k)
-	local dough = rgb(225, 165, 95)
-	local frosting = rgb(255, 135, 185)
-	local ringR, tubeD = 1.35, 1.3
-	local centerY = 3.0
-
-	-- The donut stands on its edge; its hole is a big gaping mouth.
-	local body: BasePart = nil :: any
-	for i = 0, 15 do
-		local angle = i * math.pi * 2 / 16
-		local at = v3(math.cos(angle) * ringR, centerY + math.sin(angle) * ringR, 0)
-		local part = k:ellipsoid("Dough", v3(tubeD, tubeD, tubeD * 0.95), CFrame.new(at), dough, nil, "Body")
-		if i == 4 then
-			body = part
-		end
-		if math.sin(angle) > -0.45 then
-			k:ellipsoid(
-				"Frosting",
-				v3(tubeD * 0.95, tubeD * 0.95, 0.4),
-				CFrame.new(at + v3(0, 0.02, -0.5)),
-				frosting,
-				nil,
-				"Body"
-			)
-		end
-	end
-	for i, drip in { -2.1, -1.25, 1.1, 2.0 } do
-		local x = math.cos(drip) * ringR * 1.15
-		local y = centerY + math.sin(drip) * ringR * 0.6
-		k:ellipsoid(
-			"FrostingDrip",
-			v3(0.34, 0.6 + (i % 2) * 0.2, 0.2),
-			CFrame.new(x, y - 0.3, -0.6),
-			frosting,
-			nil,
-			"Body"
-		)
-	end
-	local sprinkleColors = { rgb(255, 255, 255), rgb(90, 190, 255), rgb(255, 230, 80), rgb(130, 230, 120) }
-	for i = 0, 13 do
-		local angle = i * math.pi * 2 / 14 + 0.2
-		if math.sin(angle) > -0.35 then
-			local at =
-				v3(math.cos(angle) * (ringR + 0.25 * ((i % 3) - 1)), centerY + math.sin(angle) * (ringR + 0.2), -0.72)
-			k:part(
-				"Sprinkle",
-				v3(0.3, 0.1, 0.08),
-				CFrame.new(at) * CFrame.Angles(0, 0, i * 1.3),
-				sprinkleColors[i % #sprinkleColors + 1],
-				nil,
-				"Body"
-			)
-		end
-	end
-
-	-- Teeth along the top of the hole, a tongue at the bottom, eyes above
-	for i = -1, 1 do
-		k:part("Tooth", v3(0.34, 0.34, 0.2), CFrame.new(i * 0.4, centerY + 0.62, -0.45), C.White, nil, "Body")
-	end
-	k:ellipsoid("HoleTongue", v3(0.9, 0.4, 0.6), CFrame.new(0, centerY - 0.62, -0.3), C.Tongue, nil, "Body")
-	for _, side in { -1, 1 } do
-		k:eye(
-			CFrame.new(side * 0.55, centerY + 1.45, -0.75),
-			{ width = 0.62, height = 0.74, iris = rgb(110, 60, 40), look = Vector2.new(0, -0.3), side = side },
-			"Body"
-		)
-		k:brow(CFrame.new(side * 0.58, centerY + 1.98, -0.72), 0.5, -16 * side, rgb(120, 50, 70), "Body")
-	end
-
-	Parts.prisonCap(
+	k:ellipsoid("HatCrown", v3(1.12, 0.78, 1.05), CFrame.new(0, 3.78, 0.02), HAT, Enum.Material.Fabric, "Body")
+	k:oval("HatBand", CFrame.new(0, 3.58, 0.02), 1.14, 1.07, 0.16, rgb(190, 150, 90), Enum.Material.Fabric, "Body")
+	k:band("Bandana", shell, 2.3, 0.26, BANDANA, Enum.Material.Fabric, "Body")
+	Parts.leaf(
 		k,
-		CFrame.new(0.2, centerY + ringR + tubeD * 0.4, 0) * CFrame.Angles(0, 0, math.rad(-10)),
-		1.0,
+		"BandanaKnot",
+		v3(0, 2.28, -0.55),
+		v3(0.05, 1.8, -0.72),
+		0.55,
+		0.08,
+		BANDANA,
+		v3(0, 0.3, -1).Unit,
+		Enum.Material.Fabric,
 		"Body"
 	)
 
-	-- Arms: one wearing a dangling handcuff
-	Parts.bareArm(k, "ArmR", v3(ringR + 0.55, centerY - 0.2, 0), v3(2.5, 3.6, -0.4), 0.34, dough, 0.46)
-	Parts.cuff(k, v3(2.35, 3.35, -0.35), 0.4, "ArmR")
-	k:limb("CuffChain", v3(2.35, 3.25, -0.35), v3(2.45, 2.7, -0.4), 0.1, C.Iron, Enum.Material.Metal, "ArmR")
-	Parts.cuff(k, v3(2.45, 2.55, -0.4), 0.36, "ArmR")
-	Parts.bareArm(k, "ArmL", v3(-ringR - 0.55, centerY - 0.2, 0), v3(-2.3, 2.1, -0.2), 0.34, dough, 0.46)
-
-	Parts.legs(k, 1.55, 0.55, 0.42, dough, rgb(90, 190, 255), C.White, 0.85, dough)
+	-- One arm swings a loot sack over the shoulder
+	Parts.bareArm(k, "ArmL", v3(-0.8, 1.95, 0), v3(-1.25, 1.35, -0.3), 0.3, BEAVER, 0.38)
+	Parts.bareArm(k, "ArmR", v3(0.8, 1.95, 0), v3(1.0, 2.75, 0.25), 0.3, BEAVER, 0.38)
+	local sack = k:ellipsoid(
+		"LootSack",
+		v3(1.2, 1.3, 1.1),
+		CFrame.new(1.05, 2.55, 0.95),
+		rgb(206, 184, 140),
+		Enum.Material.Fabric,
+		"ArmR"
+	)
+	k:ellipsoid(
+		"SackTie",
+		v3(0.4, 0.2, 0.4),
+		CFrame.new(1.02, 3.2, 0.62),
+		rgb(150, 120, 80),
+		Enum.Material.Fabric,
+		"ArmR"
+	)
+	k:badge(CFrame.new(1.05, 2.5, 0.38) * CFrame.Angles(0, math.rad(-20), 0), "$", 0.5, "ArmR")
+	local _ = sack
 	return body
 end
 
-Uncommon.CactusCrook = function(k)
-	local green = rgb(80, 170, 90)
-	local greenDark = rgb(55, 130, 70)
-	local spine = rgb(250, 245, 215)
-	local pot = rgb(200, 100, 60)
-	local column: Kit.Shell = { center = v3(0, 3.35, 0), radii = v3(0.85, 1.9, 0.85) }
+---------------------------------------------------------------------------
+-- Burbaloni Luliloli: a capybara wearing a coconut
+---------------------------------------------------------------------------
 
-	-- Saguaro column with ribs, arms raised: "caught!"
-	local body = k:limb("Body", v3(0, 1.9, 0), v3(0, 4.9, 0), 1.7, green, nil, "Body")
-	for _, angle in { -140, -40, 40, 140 } do
-		local p1 = Kit.surface(column, angle, -35)
-		local p2 = Kit.surface(column, angle, 45)
-		k:limb("Rib", p1, p2, 0.16, greenDark, nil, "Body")
+Uncommon.BurbaloniLuliloli = function(k: Kit): BasePart
+	local COCONUT = rgb(118, 78, 50)
+	local FLESH = rgb(250, 247, 236)
+	local CAPY = rgb(180, 130, 84)
+	local CAPY_DARK = rgb(128, 88, 56)
+
+	-- The coconut shell, worn like a turtle shell, cut open at the front
+	local shell: Kit.Shell = { center = v3(0, 1.75, 0.3), radii = v3(1.28, 1.2, 1.3) }
+	local body =
+		k:ellipsoid("Coconut", shell.radii * 2, CFrame.new(shell.center), COCONUT, Enum.Material.Fabric, "Body")
+	local opening = CFrame.new(0, 1.6, -0.82) * CFrame.Angles(math.pi / 2, 0, 0)
+	Parts.ring(k, "CoconutFlesh", opening, 0.88, 0.26, FLESH, nil, "Body", 12)
+	for _, spot in { { -0.3, 55 }, { 0.3, 55 }, { 0, 70 } } do
+		k:ellipsoid(
+			"CoconutEye",
+			v3(0.22, 0.22, 0.1),
+			Kit.on(shell, 180 + spot[1] * 60, spot[2] - 20, 0.01),
+			rgb(64, 42, 30),
+			nil,
+			"Body"
+		)
 	end
+
+	-- Capybara poking out of the front
+	local head: Kit.Shell = { center = v3(0, 1.8, -1.2), radii = v3(0.64, 0.58, 0.72) }
+	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center), CAPY, Enum.Material.Fabric, "Body")
+	k:ellipsoid("Muzzle", v3(1.0, 0.8, 0.7), CFrame.new(0, 1.62, -1.62), CAPY, Enum.Material.Fabric, "Body")
+	k:ellipsoid("Nose", v3(0.62, 0.3, 0.2), CFrame.new(0, 1.8, -1.95), CAPY_DARK, nil, "Body")
 	for _, side in { -1, 1 } do
-		local rig = if side > 0 then "ArmR" else "ArmL"
-		local shoulder = v3(side * 0.7, 3.1, 0)
-		local elbow = v3(side * 1.55, 3.05, 0)
-		local hand = v3(side * 1.6, 4.25, 0)
-		k:limb("CactusArm", shoulder, elbow, 0.75, green, nil, rig)
-		k:limb("CactusArm", elbow, hand, 0.7, green, nil, rig)
-		k.model:SetAttribute(rig .. "Joint", shoulder)
-		for i = 0, 2 do
-			k:ball("Spine", 0.12, hand + v3(side * 0.34, -0.3 * i, -0.1), spine, nil, rig)
+		k:ball("Nostril", 0.1, v3(side * 0.14, 1.8, -2.04), rgb(60, 40, 30), nil, "Body")
+		k:ball("Ear", 0.28, v3(side * 0.45, 2.34, -1.0), CAPY_DARK, nil, "Body")
+		k:eye(
+			Kit.on(head, side * 40, 18, -0.04),
+			{ width = 0.24, height = 0.26, iris = rgb(40, 28, 22), lid = 0.45, skin = CAPY, side = side },
+			"Body"
+		)
+		-- Paws on the rim and hind feet
+		k:ellipsoid("Paw", v3(0.34, 0.24, 0.46), CFrame.new(side * 0.52, 0.95, -1.05), CAPY_DARK, nil, "ArmL")
+		k:limb("Leg", v3(side * 0.52, 1.1, -0.9), v3(side * 0.52, 0.95, -1.05), 0.3, CAPY, nil, "ArmL")
+		k:ellipsoid("HindFoot", v3(0.5, 0.26, 0.7), CFrame.new(side * 0.7, 0.13, 0.6), CAPY_DARK, nil, "Legs")
+		k:limb("HindLeg", v3(side * 0.7, 0.7, 0.55), v3(side * 0.7, 0.2, 0.6), 0.4, CAPY, nil, "Legs")
+	end
+	k:mouth(
+		CFrame.new(0, 1.42, -1.9),
+		{ width = 0.3, height = 0.1, skin = CAPY, style = "Smile", radius = 0.4 },
+		"Body"
+	)
+	-- The famous orange on its head, and a cocktail straw with a paper umbrella
+	k:ball("Orange", 0.5, v3(0, 2.62, -1.15), rgb(255, 150, 40), nil, "Body")
+	Parts.leaf(
+		k,
+		"OrangeLeaf",
+		v3(0, 2.86, -1.15),
+		v3(0.25, 3.02, -1.05),
+		0.2,
+		0.04,
+		rgb(80, 170, 70),
+		Vector3.yAxis,
+		nil,
+		"Body"
+	)
+	k:limb("Straw", v3(0.35, 2.7, 0.45), v3(0.62, 3.65, 0.62), 0.12, rgb(255, 110, 140), nil, "Body")
+	local umbrella = CFrame.new(0.6, 3.58, 0.61) * CFrame.Angles(0, 0, math.rad(-18))
+	k:ellipsoid("Umbrella", v3(1.05, 0.34, 1.05), umbrella, rgb(255, 120, 150), nil, "Body")
+	k:ellipsoid(
+		"UmbrellaStripe",
+		v3(0.62, 0.3, 0.62),
+		umbrella * CFrame.new(0, 0.05, 0),
+		rgb(255, 222, 90),
+		nil,
+		"Body"
+	)
+	k:ball("UmbrellaTip", 0.1, (umbrella * CFrame.new(0, 0.2, 0)).Position, C.White, nil, "Body")
+	return body
+end
+
+---------------------------------------------------------------------------
+-- Il Cacto Hipopotamo: a hippo that grew into a cactus
+---------------------------------------------------------------------------
+
+Uncommon.CactoHipopotamo = function(k: Kit): BasePart
+	local CACTUS = rgb(98, 176, 96)
+	local GROOVE = rgb(62, 132, 70)
+	local SNOUT = rgb(150, 206, 130)
+	local SPINE = rgb(252, 246, 222)
+
+	for _, x in { -0.7, 0.7 } do
+		for _, z in { -0.55, 0.65 } do
+			k:limb("Leg", v3(x, 0.95, z), v3(x * 1.04, 0.28, z), 0.58, CACTUS, nil, "Legs")
+			k:oval("Toe", CFrame.new(x * 1.04, 0.1, z - 0.05), 0.6, 0.6, 0.2, SNOUT, nil, "Legs")
 		end
 	end
-	for i = 0, 11 do
-		local yaw = (i * 67) % 360 - 180
-		local pitch = -40 + (i * 29) % 90
-		if math.abs(yaw) > 40 or pitch > 55 or pitch < -25 then
-			local point = Kit.surface(column, yaw, pitch)
-			k:ball("Spine", 0.14, point, spine, nil, "Body")
-		end
+	local shell: Kit.Shell = { center = v3(0, 1.6, 0.25), radii = v3(1.15, 0.95, 1.3) }
+	local body = k:ellipsoid("Body", shell.radii * 2, CFrame.new(shell.center), CACTUS, nil, "Body")
+	for _, yaw in { -140, -100, -60, 60, 100, 140, 180 } do
+		Parts.patch(k, "Groove", shell, yaw, 8, 0.14, 1.7, GROOVE, nil, "Body")
 	end
 
-	-- Pink flower on top
-	for i = 0, 4 do
-		local angle = i * math.pi * 2 / 5
+	-- Big hippo head with a wide snout
+	local head: Kit.Shell = { center = v3(0, 2.55, -0.75), radii = v3(0.85, 0.72, 0.72) }
+	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center), CACTUS, nil, "Body")
+	local snout: Kit.Shell = { center = v3(0, 2.05, -1.2), radii = v3(0.98, 0.56, 0.62) }
+	k:ellipsoid("Snout", snout.radii * 2, CFrame.new(snout.center), SNOUT, nil, "Body")
+	for _, side in { -1, 1 } do
+		k:ellipsoid("Nostril", v3(0.16, 0.1, 0.14), Kit.on(snout, side * 22, 42, -0.02), GROOVE, nil, "Body")
+		k:ball("Ear", 0.32, v3(side * 0.6, 3.18, -0.55), CACTUS, nil, "Body")
+		k:tooth(Kit.on(snout, side * 26, -22, 0.02), 0.16, -0.26, nil, "Body")
+		k:blush(Kit.on(snout, side * 55, 10, 0.02), 0.3, "Body")
+	end
+	k:eyes(head, 30, 26, { width = 0.36, height = 0.42, iris = rgb(45, 35, 40) }, "Body")
+	k:mouth(
+		Kit.on(snout, 0, -12, 0),
+		{ width = 1.1, height = 0.18, skin = SNOUT, style = "Smile", radius = 0.8 },
+		"Body"
+	)
+	-- Spines and a desert flower on top
+	for i = 1, 22 do
+		local yaw = ((i * 137.5) % 260) - 130 + 180
+		local pitch = -25 + (i * 47 % 85)
+		k:ball("Spine", 0.13, (Kit.surface(shell, yaw, pitch)), SPINE, nil, "Body")
+	end
+	for i = 1, 8 do
+		local yaw = (i * 97) % 120 - 60
+		local pitch = 10 + (i * 31) % 50
+		k:ball("Spine", 0.1, (Kit.surface(head, yaw + (if yaw >= 0 then 45 else -45), pitch)), SPINE, nil, "Body")
+	end
+	local flower = v3(0.2, 3.3, -0.65)
+	for i = 0, 5 do
+		local angle = i * math.pi * 2 / 6
 		k:ellipsoid(
 			"Petal",
-			v3(0.5, 0.2, 0.5),
-			CFrame.new(math.cos(angle) * 0.32, 5.62, math.sin(angle) * 0.32),
-			rgb(255, 110, 170),
+			v3(0.24, 0.1, 0.4),
+			CFrame.new(flower)
+				* CFrame.Angles(0, angle, 0)
+				* CFrame.new(0, 0, -0.18)
+				* CFrame.Angles(math.rad(20), 0, 0),
+			rgb(255, 110, 160),
 			nil,
 			"Body"
 		)
 	end
-	k:ball("FlowerCenter", 0.36, v3(0, 5.72, 0), rgb(255, 225, 70), nil, "Body")
+	k:ball("FlowerHeart", 0.2, flower + v3(0, 0.05, 0), rgb(255, 214, 70), nil, "Body")
+	return body
+end
 
-	-- Grumpy face
-	k:eyes(column, 22, 18, {
-		width = 0.52,
-		height = 0.62,
-		iris = rgb(60, 50, 40),
-		look = Vector2.new(0, 0),
-		lid = 0.35,
-		lidTilt = 16,
-		skin = green,
-	}, "Body")
+---------------------------------------------------------------------------
+-- Orangutini Ananassini: an orangutan in a pineapple suit
+---------------------------------------------------------------------------
+
+Uncommon.OrangutiniAnanassini = function(k: Kit): BasePart
+	local PINEAPPLE = rgb(246, 184, 58)
+	local SCALE = rgb(206, 132, 40)
+	local LEAF = rgb(70, 160, 80)
+	local FUR = rgb(214, 104, 46)
+	local FACE = rgb(236, 196, 152)
+
 	for _, side in { -1, 1 } do
-		k:brow(Kit.on(column, 22 * side, 35, 0.03), 0.5, 22 * side, rgb(40, 60, 40), "Body")
+		k:limb("Leg", v3(side * 0.45, 0.62, 0), v3(side * 0.5, 0.22, 0), 0.38, FUR, Enum.Material.Fabric, "Legs")
+		k:ellipsoid("Foot", v3(0.54, 0.24, 0.8), CFrame.new(side * 0.52, 0.12, -0.18), FACE, nil, "Legs")
 	end
-	k:mouth(Kit.on(column, 0, 0, -0.03), { width = 0.62, height = 0.32, skin = green, style = "Frown" }, "Body")
+	local shell: Kit.Shell = { center = v3(0, 1.95, 0), radii = v3(0.98, 1.35, 0.92) }
+	local body = k:ellipsoid("Pineapple", shell.radii * 2, CFrame.new(shell.center), PINEAPPLE, nil, "Body")
+	-- Diamond scales, skipping the face opening
+	for row = 0, 4 do
+		for col = 0, 6 do
+			local yaw = col * 51.4 + (row % 2) * 25.7 - 180
+			local pitch = -50 + row * 22
+			if not (math.abs(yaw) < 45 and pitch > -10) then
+				k:ellipsoid(
+					"Scale",
+					v3(0.16, 0.16, 0.08),
+					Kit.on(shell, yaw, pitch, 0.01) * CFrame.Angles(0, 0, math.rad(45)),
+					SCALE,
+					nil,
+					"Body"
+				)
+			end
+		end
+	end
+	for i = 0, 6 do
+		local angle = i * math.pi * 2 / 7
+		local out = v3(math.cos(angle), 0, math.sin(angle))
+		local base = v3(0, 3.1, 0) + out * 0.2
+		Parts.leaf(
+			k,
+			"Crown",
+			base,
+			base + out * 0.55 + v3(0, 1.0 + (i % 2) * 0.35, 0),
+			0.34,
+			0.08,
+			LEAF,
+			out:Cross(Vector3.yAxis),
+			nil,
+			"Body"
+		)
+	end
 
-	-- Terracotta pot with a painted number, legs poking out underneath
-	k:cylinder("Pot", 1.35, 2.1, CFrame.new(0, 1.7, 0), pot, nil, "Body")
-	k:cylinder("PotRim", 0.35, 2.35, CFrame.new(0, 2.45, 0), pot:Lerp(Color3.new(1, 1, 1), 0.12), nil, "Body")
-	k:cylinder("Soil", 0.1, 2.0, CFrame.new(0, 2.6, 0), rgb(90, 60, 40), nil, "Body")
-	k:badge(CFrame.new(0, 1.7, -1.06), "#13", 0.8, "Body")
-	Parts.legs(k, 1.1, 0.5, 0.42, pot, rgb(60, 60, 70), C.White, 0.85, pot)
+	-- The orangutan's face in the pineapple's opening: cheek pads, small eyes, a wide grin
+	local face = Kit.on(shell, 0, 22, -0.08)
+	k:ellipsoid("FurRim", v3(1.5, 1.3, 0.4), face, FUR, Enum.Material.Fabric, "Body")
+	local faceShell: Kit.Shell = { center = (face * CFrame.new(0, 0, -0.08)).Position, radii = v3(0.62, 0.55, 0.3) }
+	k:ellipsoid("Face", faceShell.radii * 2, CFrame.new(faceShell.center), FACE, nil, "Body")
+	for _, side in { -1, 1 } do
+		k:ellipsoid(
+			"CheekPad",
+			v3(0.36, 0.7, 0.26),
+			CFrame.new(faceShell.center + v3(side * 0.62, 0, 0.02)),
+			rgb(170, 90, 50),
+			nil,
+			"Body"
+		)
+		k:ball("Nostril", 0.08, faceShell.center + v3(side * 0.08, -0.02, -0.3), rgb(110, 70, 50), nil, "Body")
+	end
+	k:eyes(faceShell, 28, 24, { width = 0.24, height = 0.28, iris = rgb(70, 40, 25) }, "Body")
+	k:mouth(
+		Kit.on(faceShell, 0, -30, 0),
+		{ width = 0.56, height = 0.24, skin = FACE, style = "Grin", radius = 0.6 },
+		"Body"
+	)
+	-- Long orangutan arms reaching almost to the floor
+	Parts.bareArm(k, "ArmL", v3(-0.88, 2.2, 0), v3(-1.3, 0.75, -0.2), 0.3, FUR, 0.42)
+	Parts.bareArm(k, "ArmR", v3(0.88, 2.2, 0), v3(1.45, 2.95, -0.1), 0.3, FUR, 0.42)
 	return body
 end
 

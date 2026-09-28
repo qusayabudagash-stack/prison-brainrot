@@ -204,35 +204,78 @@ end
 
 local function parole(s: Shapes.Shapes)
 	local purple = rgb(150, 92, 236)
-	-- Office wall with a glowing door
-	for _, x in { -4.6, 4.6 } do
-		s:box("OfficeWall", v3(2.8, 12, 1), CFrame.new(x, 6, 3), Palette.ConcreteWarm, M.Concrete)
+	local lavender = rgb(214, 186, 255)
+	-- The Freedom Gate: an arched portal on stepped half-round platforms, flanked by columns
+	for i, step in
+		{
+			{ size = 15, color = Palette.Frame },
+			{ size = 12, color = purple:Lerp(Palette.Ink, 0.35) },
+			{ size = 9, color = Palette.Frame },
+		}
+	do
+		s:cyl("GateStep", 0.35, step.size, CFrame.new(0, 0.175 + (i - 1) * 0.35, 3.2), step.color, M.Concrete)
 	end
-	s:box("OfficeWall", v3(6.4, 2.6, 1), CFrame.new(0, 10.7, 3), Palette.ConcreteWarm, M.Concrete)
-	s:deco("DoorFrame", v3(6.8, 9.8, 1.4), CFrame.new(0, 4.7, 2.9), Palette.SteelDark, M.Metal)
-	local door = s:box("Door", v3(6, 9.2, 0.3), CFrame.new(0, 4.6, 2.5), purple, M.Neon)
-	door.Transparency = 0.25
+	s:cyl("GateStepTrim", 0.08, 15.2, CFrame.new(0, 0.36, 3.2), Palette.Gold, M.Foil, false)
+	local base = 1.05
+	for _, x in { -5.4, 5.4 } do
+		s:box("GateColumn", v3(1.8, 13, 1.8), CFrame.new(x, base + 6.5, 2.6), Palette.ConcreteWarm, M.Plaster)
+		s:box("GateColumnBase", v3(2.4, 1, 2.4), CFrame.new(x, base + 0.5, 2.6), Palette.Frame, M.Concrete)
+		s:box("GateColumnCap", v3(2.4, 0.8, 2.4), CFrame.new(x, base + 13.2, 2.6), Palette.Gold, M.Foil)
+	end
+	s:box("GateLintel", v3(13.2, 1.4, 2), CFrame.new(0, base + 14.3, 2.6), Palette.Frame, M.Concrete)
+	-- Arched opening: a charcoal arch backplate with the glowing portal inside it
+	local arch = CFrame.new(0, base + 9.5, 3.3) * CFrame.Angles(0, math.pi / 2, 0)
+	s:deco("GateArch", v3(0.4, 10, 10), arch, Palette.Frame, M.Concrete).Shape = Enum.PartType.Cylinder
+	s:deco("GateArchFill", v3(9.6, 9.5, 0.4), CFrame.new(0, base + 4.75, 3.3), Palette.Frame, M.Concrete)
+	local door = s:box("Door", v3(8, 9.2, 0.3), CFrame.new(0, base + 4.6, 2.9), purple, M.Neon)
+	door.Transparency = 0.2
 	door.CastShadow = false
-	s:light(door, purple, 16, 1.4)
-	local plaque = s:deco("Plaque", v3(4, 1, 0.1), CFrame.new(0, 7.6, 2.3), Palette.Gold, M.Foil)
+	local top = s:deco(
+		"DoorTop",
+		v3(0.3, 8, 8),
+		CFrame.new(0, base + 9.2, 2.9) * CFrame.Angles(0, math.pi / 2, 0),
+		purple,
+		M.Neon
+	)
+	top.Shape = Enum.PartType.Cylinder
+	top.Transparency = 0.2
+	top.CastShadow = false
+	local swirl = s:deco(
+		"Swirl",
+		v3(0.2, 5.4, 5.4),
+		CFrame.new(0, base + 7, 2.7) * CFrame.Angles(0, math.pi / 2, 0),
+		lavender,
+		M.Neon
+	)
+	swirl.Shape = Enum.PartType.Cylinder
+	swirl.Transparency = 0.35
+	swirl.CastShadow = false
+	for i = 0, 5 do
+		local angle = i * 1.05
+		s:ball(
+			"PortalStar",
+			0.3,
+			v3(math.cos(angle) * 3.2, base + 7 + math.sin(angle) * 3.6, 2.6),
+			Palette.White,
+			M.Neon,
+			false
+		).CastShadow =
+			false
+	end
+	s:light(door, purple, 22, 1.6)
+	local plaque = s:deco("Plaque", v3(5, 1.1, 0.1), CFrame.new(0, base + 14.3, 1.55), Palette.Gold, M.Foil)
 	Build.surfaceText(
 		plaque,
 		Enum.NormalId.Front,
 		"PAROLE BOARD",
 		{ textColor = Palette.Ink, strokeColor = Palette.Gold, pixelsPerStud = 40 }
 	)
-	-- Clerk's desk with the REBIRTH stamp
-	s:box("Desk", v3(4, 3, 2.2), CFrame.new(-3.6, 1.5, -1.4), Palette.WoodDark, M.Wood)
-	s:deco("DeskTop", v3(4.3, 0.2, 2.5), CFrame.new(-3.6, 3.1, -1.4), Palette.Wood, M.WoodPlanks)
-	s:deco("Papers", v3(1.4, 0.1, 1.8), CFrame.new(-4.4, 3.25, -1.5) * CFrame.Angles(0, math.rad(12), 0), Palette.White)
-	s:cyl("StampHandle", 0.9, 0.35, CFrame.new(-2.7, 3.8, -1.4), Palette.WoodDark, M.Wood, false)
-	s:deco("Stamp", v3(0.9, 0.3, 0.6), CFrame.new(-2.7, 3.3, -1.4), purple, M.SmoothPlastic)
-	Props.ropeLine(
-		s.parent,
-		{ s:world(CFrame.new(1.5, 0, -2.5)).Position, s:world(CFrame.new(4.5, 0, -2.5)).Position },
-		purple
-	)
-	title(s, "🔄 REBIRTH", purple, 13.4)
+	-- Clerk's desk with the REBIRTH stamp, off to one side
+	s:box("Desk", v3(3.4, 3, 2.2), CFrame.new(-8.4, 1.5, -0.6), Palette.WoodDark, M.Wood)
+	s:deco("DeskTop", v3(3.7, 0.2, 2.5), CFrame.new(-8.4, 3.1, -0.6), Palette.Wood, M.WoodPlanks)
+	s:cyl("StampHandle", 0.9, 0.35, CFrame.new(-7.8, 3.8, -0.6), Palette.WoodDark, M.Wood, false)
+	s:deco("Stamp", v3(0.9, 0.3, 0.6), CFrame.new(-7.8, 3.3, -0.6), purple, M.SmoothPlastic)
+	title(s, "🔄 REBIRTH", purple, 15.9, 12)
 	prompt(door, "Rebirth", "Rebirth", "🔄 REBIRTH")
 end
 

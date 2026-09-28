@@ -133,11 +133,14 @@ T.run(function()
 	---------------------------------------------------------------------------
 	section("Rolling from the HUD")
 	---------------------------------------------------------------------------
+	local coinsBefore, earnedBefore = data.coins, data.totalEarned
 	click(screen("MainUI"), "🎰 ROLL")
 	check("roll screen opens", screen("RollUI").Enabled == true)
 	finishRoll()
 	check("rolled once", data.totalRolls == 1)
-	check("paid $100", data.coins < 100)
+	-- Income keeps ticking during the roll (faster if the roll was lucky), so count it back in
+	local paid = coinsBefore + (data.totalEarned - earnedBefore) - data.coins
+	check("paid $100", math.abs(paid - 100) < 0.01, paid)
 	check("roll screen closes", screen("RollUI").Enabled == false)
 
 	EconomyService.add(alice, 1e6)
@@ -188,21 +191,21 @@ T.run(function()
 	check("a card for every Brainrot", cards == BrainrotData.Count, cards)
 	check("collection counter", find(book, `COLLECTION: {Formulas.discoveredCount(data)}/{BrainrotData.Count}`) ~= nil)
 	check("unknown Brainrots show ???", find(book, "???") ~= nil)
-	check("known Brainrots show their name", find(book, "Potato Prisoner") ~= nil)
+	check("known Brainrots show their name", find(book, "Tim Cheese") ~= nil)
 
-	BrainrotService.grant(data, "PotatoPrisoner", "Normal", 3)
+	BrainrotService.grant(data, "TimCheese", "Normal", 3)
 	DataService.changed(alice, "brainrots")
 	task.wait(0.2)
-	local potatoGolden = data.brainrots.PotatoPrisoner.Golden
-	local potatoCard = find(book, "🥔 Potato Prisoner").Parent
-	potatoCard:FindFirstChild("TextButton").Activated:Fire()
-	for _, child in potatoCard:GetChildren() do
+	local cheeseGolden = data.brainrots.TimCheese.Golden
+	local cheeseCard = find(book, "🧀 Tim Cheese").Parent
+	cheeseCard:FindFirstChild("TextButton").Activated:Fire()
+	for _, child in cheeseCard:GetChildren() do
 		if child:IsA("TextButton") and string.find(child.Text, "⭐", 1, true) then
 			child.Activated:Fire()
 		end
 	end
 	task.wait(0.2)
-	check("combine button makes a Golden Potato", data.brainrots.PotatoPrisoner.Golden >= potatoGolden + 1)
+	check("combine button makes a Golden Tim Cheese", data.brainrots.TimCheese.Golden >= cheeseGolden + 1)
 	click(book, "COMBINE ALL")
 	check("combine all button works", true)
 	click(book, "X")

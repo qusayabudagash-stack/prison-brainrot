@@ -1,4 +1,4 @@
--- LEGENDARY Brainrots: big, instantly recognizable silhouettes. Auras and particles come from Effects.
+-- LEGENDARY Brainrots: the famous ones. Tall, full-body poses, premium materials and props.
 
 local Kit = require(script.Parent.Kit)
 local Parts = require(script.Parent.Parts)
@@ -11,515 +11,535 @@ local v3 = Vector3.new
 
 local Legendary: { [string]: (Kit) -> BasePart } = {}
 
-local function fire(part: BasePart, size: number, color: Color3, secondary: Color3)
-	local flame = Instance.new("Fire")
-	flame.Size = size
-	flame.Heat = 8
-	flame.Color = color
-	flame.SecondaryColor = secondary
-	flame.Parent = part
-end
+local SKIN = rgb(240, 198, 162)
 
-Legendary.PrisonKing = function(k)
-	local skin = rgb(255, 196, 150)
-	local velvet = rgb(190, 25, 45)
-	local flame = rgb(255, 130, 30)
-	local flameHot = rgb(255, 215, 70)
-	local robe: Kit.Shell = { center = v3(0, 3.0, 0), radii = v3(1.95, 1.9, 1.75) }
-	local head: Kit.Shell = { center = v3(0, 5.6, -0.25), radii = v3(1.2, 1.15, 1.1) }
+---------------------------------------------------------------------------
+-- Ballerina Cappuccina: a ballerina with a cappuccino cup for a head
+---------------------------------------------------------------------------
 
-	-- Royal robe in prison stripes, trimmed with gold
-	local body = k:ellipsoid("Body", robe.radii * 2, CFrame.new(robe.center), C.White, Enum.Material.Fabric, "Body")
-	Parts.stripes(k, robe, 1.35, 4.35, 5, C.Stripe, "Body", 0.42)
-	k:limb("RobeTrim", Kit.surface(robe, 0, 50), Kit.surface(robe, 0, -55), 0.28, C.Gold, Enum.Material.Foil, "Body")
-	k:band("RobeHem", robe, 1.35, 0.3, C.Gold, Enum.Material.Foil, "Body")
-	k:band("Belt", robe, 2.55, 0.38, rgb(90, 40, 30), nil, "Body")
-	k:part("BeltBuckle", v3(0.7, 0.55, 0.12), Kit.on(robe, 0, -14, 0.1), C.Gold, Enum.Material.Foil, "Body")
+Legendary.BallerinaCappuccina = function(k: Kit): BasePart
+	local CUP = rgb(250, 246, 240)
+	local TUTU = rgb(255, 170, 200)
+	local TUTU_LIGHT = rgb(255, 214, 230)
+	local LEOTARD = rgb(246, 120, 168)
+	local SHOE = rgb(255, 190, 200)
 
-	-- Cape with an ermine collar
-	Parts.cape(k, v3(0, 4.65, 0.75), 3.9, 4.1, velvet, C.White, "Body")
-	for i = 0, 9 do
-		local angle = i * math.pi * 2 / 10
-		local at = v3(math.cos(angle) * 1.3, 4.7, math.sin(angle) * 1.15)
-		k:ball("Ermine", 0.82, at, C.White, Enum.Material.Fabric, "Body")
-		if i % 2 == 0 then
-			k:ball(
-				"ErmineSpot",
-				0.16,
-				at + v3(math.cos(angle) * 0.36, 0.05, math.sin(angle) * 0.36),
-				rgb(25, 25, 30),
-				nil,
-				"Body"
-			)
-		end
-	end
-
-	-- Head: strong face, flaming beard and hair, big crown
-	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center), skin, nil, "Body")
-	k:eyes(head, 24, 16, {
-		width = 0.56,
-		height = 0.62,
-		iris = rgb(90, 50, 20),
-		look = Vector2.new(0, 0),
-		lid = 0.32,
-		lidTilt = -6,
-		skin = skin,
-	}, "Body")
-	for _, side in { -1, 1 } do
-		k:brow(Kit.on(head, 25 * side, 33, 0.04), 0.62, 14 * side, rgb(200, 80, 20), "Body")
-		k:ellipsoid(
-			"Mustache",
-			v3(0.85, 0.34, 0.3),
-			Kit.on(head, 17 * side, -14, 0.1) * CFrame.Angles(0, 0, math.rad(-18 * side)),
-			flame,
-			nil,
-			"Body"
-		)
-		k:ellipsoid(
-			"MustacheTip",
-			v3(0.4, 0.22, 0.22),
-			Kit.on(head, 34 * side, -8, 0.12) * CFrame.Angles(0, 0, math.rad(30 * side)),
-			flameHot,
-			Enum.Material.Neon,
-			"Body"
-		)
-	end
-	k:ellipsoid("Nose", v3(0.42, 0.4, 0.4), Kit.on(head, 0, -2, 0.02), skin:Lerp(rgb(230, 130, 110), 0.4), nil, "Body")
-	k:mouth(Kit.on(head, 0, -30, -0.02), { width = 0.7, height = 0.3, skin = skin, style = "Teeth" }, "Body")
-	for i, spot in
-		{ v3(0, 4.55, -1.05), v3(-0.55, 4.7, -0.95), v3(0.55, 4.7, -0.95), v3(-0.3, 4.3, -0.9), v3(0.3, 4.3, -0.9) }
-	do
-		local color = if i == 1 then flameHot else flame
-		k:ellipsoid(
-			"FlameBeard",
-			v3(0.75, 1.0, 0.6),
-			CFrame.new(spot) * CFrame.Angles(math.rad(15), 0, 0),
-			color,
-			nil,
-			"Body"
-		)
-	end
-	for i = -2, 2 do
-		local tip = v3(i * 0.55, 7.2 - math.abs(i) * 0.35, 0.55)
-		k:limb(
-			"FlameHair",
-			v3(i * 0.35, 5.8, 0.7),
-			tip,
-			0.55 - math.abs(i) * 0.06,
-			if i % 2 == 0 then flame else flameHot,
-			Enum.Material.Neon,
-			"Body"
-		)
-	end
-	Parts.crown(k, CFrame.new(0, 6.5, -0.2) * CFrame.Angles(0, 0, math.rad(-5)), 1.95, rgb(40, 200, 120), "Body")
-	fire(k.model:FindFirstChild("Head") :: BasePart, 3, flame, rgb(255, 60, 20))
-
-	-- Scepter topped with a giant golden prison key; other hand on the belly
-	Parts.arm(k, "ArmR", v3(1.8, 3.85, 0), v3(2.55, 4.1, -0.55), 0.62, velvet, skin, 0.66)
-	k:limb("Scepter", v3(2.55, 1.2, -0.6), v3(2.6, 5.7, -0.6), 0.22, C.Gold, Enum.Material.Foil, "ArmR")
-	k:disc("KeyBow", 0.9, 0.2, CFrame.new(2.6, 6.1, -0.6), C.Gold, Enum.Material.Foil, "ArmR")
-	k:disc("KeyBowHole", 0.42, 0.24, CFrame.new(2.6, 6.1, -0.6), rgb(190, 25, 45), Enum.Material.Neon, "ArmR")
-	k:part("KeyTooth", v3(0.4, 0.14, 0.14), CFrame.new(2.8, 1.5, -0.6), C.Gold, Enum.Material.Foil, "ArmR")
-	k:part("KeyTooth", v3(0.3, 0.14, 0.14), CFrame.new(2.75, 1.85, -0.6), C.Gold, Enum.Material.Foil, "ArmR")
-	Parts.arm(k, "ArmL", v3(-1.8, 3.85, 0), v3(-1.1, 2.9, -1.35), 0.62, velvet, skin, 0.66)
-
-	-- Short legs in red royal boots
-	for _, side in { -1, 1 } do
-		k:limb("Leg", v3(side * 0.7, 1.4, 0), v3(side * 0.75, 0.6, 0), 0.62, C.White, Enum.Material.Fabric, "Legs")
-		k:ellipsoid("RoyalBoot", v3(0.95, 0.85, 1.4), CFrame.new(side * 0.75, 0.42, -0.2), velvet, nil, "Legs")
-		k:cylinder("BootCuff", 0.25, 0.85, CFrame.new(side * 0.75, 0.85, 0), C.Gold, Enum.Material.Foil, "Legs")
-	end
-	return body
-end
-
-Legendary.ElectricInmate = function(k)
-	local yellow = rgb(255, 232, 80)
-	local volt = rgb(120, 235, 255)
-	local shell: Kit.Shell = { center = v3(0, 2.8, 0), radii = v3(1.6, 1.65, 1.5) }
-	local suit: Kit.Shell = { center = v3(0, 1.95, 0), radii = v3(1.68, 1.1, 1.58) }
-
-	local body = k:ellipsoid("Body", shell.radii * 2, CFrame.new(shell.center), yellow, nil, "Body")
-	k:ellipsoid("Jumpsuit", suit.radii * 2, CFrame.new(suit.center), C.Jumpsuit, Enum.Material.Fabric, "Body")
-	k:band("Collar", suit, 2.55, 0.26, C.JumpsuitDark, Enum.Material.Fabric, "Body")
-	k:badge(Kit.on(suit, 0, 10, 0.02), "#9V", 0.8, "Body")
-
-	-- Three big lightning bolts shooting out of the scalp, built as flat zigzags with sharp corners
-	local zigzag = { Vector2.new(0, -0.2), Vector2.new(0.38, 0.55), Vector2.new(-0.12, 0.72), Vector2.new(0.3, 1.5) }
-	for i, spec in { { 0, 1.35, 0 }, { -42, 1.05, -1 }, { 42, 1.05, 1 } } do
-		local yaw, size, lean = spec[1], spec[2], spec[3]
-		local root = Kit.surface(shell, yaw, if i == 1 then 80 else 50)
-		local frame = CFrame.new(root) * CFrame.Angles(0, math.rad(-yaw), 0) * CFrame.Angles(0, 0, math.rad(-lean * 32))
-		for j = 1, 3 do
-			local from, to = zigzag[j] * size, zigzag[j + 1] * size
-			local mid, dir = (from + to) / 2, to - from
-			local width = (0.4 - j * 0.07) * size
-			k:part(
-				"Bolt",
-				v3(width, dir.Magnitude + width * 0.6, 0.16),
-				frame * CFrame.new(mid.X, mid.Y, 0) * CFrame.Angles(0, 0, math.atan2(dir.Y, dir.X) - math.pi / 2),
-				volt,
-				Enum.Material.Neon,
-				"Body"
-			)
-		end
-		local tip = zigzag[4] * size
-		k:wedge(
-			"BoltTip",
-			v3(0.08, 0.35 * size, 0.2 * size),
-			frame * CFrame.new(tip.X, tip.Y + 0.1, 0) * CFrame.Angles(0, math.pi / 2, 0),
-			C.White,
-			Enum.Material.Neon,
-			"Body"
-		)
-	end
-
-	-- Wild, buzzing face
-	k:eyes(
-		shell,
-		22,
-		22,
-		{ width = 0.78, height = 0.9, iris = rgb(60, 170, 255), look = Vector2.new(0, 0.2), skin = yellow },
-		"Body"
-	)
-	for _, side in { -1, 1 } do
-		k:brow(Kit.on(shell, 23 * side, 44, 0.04), 0.6, -24 * side, rgb(150, 110, 20), "Body")
-		k:blush(Kit.on(shell, 42 * side, 8, -0.02), 0.5, "Body")
-	end
-	k:mouth(
-		Kit.on(shell, 0, 0, -0.03),
-		{ width = 1.25, height = 0.62, skin = yellow, style = "Teeth", radius = 1.6 },
-		"Body"
-	)
-
-	-- Rubber gloves and a big battery
-	Parts.arm(k, "ArmR", v3(1.5, 2.6, 0), v3(2.2, 3.3, -0.5), 0.46, C.Jumpsuit, rgb(30, 30, 35), 0.62)
-	k:cylinder("Battery", 1.3, 0.6, CFrame.new(2.3, 3.8, -0.55), rgb(40, 170, 90), nil, "ArmR")
-	k:cylinder("BatteryTop", 0.35, 0.62, CFrame.new(2.3, 4.3, -0.55), C.Gold, Enum.Material.Foil, "ArmR")
-	k:cylinder("BatteryNub", 0.15, 0.25, CFrame.new(2.3, 4.55, -0.55), rgb(200, 205, 215), Enum.Material.Metal, "ArmR")
-	Parts.arm(k, "ArmL", v3(-1.5, 2.6, 0), v3(-2.2, 3.3, -0.5), 0.46, C.Jumpsuit, rgb(30, 30, 35), 0.62)
-
-	-- Sparks orbiting around
-	for i = 0, 3 do
-		local angle = i * math.pi / 2
-		k:ball(
-			"Spark",
-			0.28,
-			v3(math.cos(angle) * 2.3, 3.2 + (i % 2) * 0.8, math.sin(angle) * 2.3),
-			volt,
-			Enum.Material.Neon,
-			"Orbit"
-		)
-	end
-
-	Parts.legs(k, 1.2, 0.62, 0.62, C.Jumpsuit, rgb(255, 210, 40), rgb(40, 40, 45), 1, C.JumpsuitDark)
-	return body
-end
-
-Legendary.GoldenWarden = function(k)
-	local gold = rgb(245, 190, 50)
-	local goldDark = rgb(200, 140, 30)
-	local navy = rgb(30, 45, 100)
-	local skin = rgb(240, 190, 150)
-	local torso: Kit.Shell = { center = v3(0, 3.0, 0), radii = v3(1.4, 1.5, 1.15) }
-	local head: Kit.Shell = { center = v3(0, 5.15, -0.1), radii = v3(0.98, 1.08, 0.95) }
-
-	-- Gold uniform with navy tie, buttons, star badge and epaulettes
-	local body = k:ellipsoid("Body", torso.radii * 2, CFrame.new(torso.center), gold, Enum.Material.Foil, "Body")
+	-- Standing leg en pointe, the other lifted in a passé with its toe at the knee
+	k:loft("Leg", {
+		{ at = v3(-0.22, 2.2, 0), w = 0.22, h = 0.22 },
+		{ at = v3(-0.26, 1.2, -0.02), w = 0.17, h = 0.17 },
+		{ at = v3(-0.28, 0.36, 0), w = 0.12, h = 0.12 },
+	}, SKIN, nil, "Legs", { density = 3, overlap = 7 })
+	k:ellipsoid("PointeShoe", v3(0.26, 0.5, 0.3), CFrame.new(-0.28, 0.22, -0.02), SHOE, Enum.Material.Fabric, "Legs")
+	k:ellipsoid("Ribbon", v3(0.28, 0.08, 0.28), CFrame.new(-0.28, 0.46, 0), SHOE, Enum.Material.Fabric, "Legs")
+	local knee = v3(0.72, 1.55, -0.18)
+	k:loft("Leg", {
+		{ at = v3(0.22, 2.2, 0), w = 0.22, h = 0.22 },
+		{ at = knee, w = 0.17, h = 0.17 },
+		{ at = v3(-0.12, 1.25, -0.08), w = 0.12, h = 0.12 },
+	}, SKIN, nil, "Legs", { density = 1.2, overlap = 4 })
 	k:ellipsoid(
-		"Collar",
-		v3(1.5, 0.45, 1.25),
-		CFrame.new(0, 4.3, -0.05),
-		rgb(245, 240, 225),
+		"PointeShoe",
+		v3(0.22, 0.28, 0.46),
+		CFrame.new(-0.2, 1.22, -0.1) * CFrame.Angles(0, math.rad(70), math.rad(-20)),
+		SHOE,
 		Enum.Material.Fabric,
-		"Body"
+		"Legs"
 	)
-	k:ellipsoid("TieKnot", v3(0.34, 0.3, 0.2), Kit.on(torso, 0, 52, 0.02), navy, Enum.Material.Fabric, "Body")
-	k:ellipsoid("Tie", v3(0.46, 1.35, 0.2), Kit.on(torso, 0, 28, -0.02), navy, Enum.Material.Fabric, "Body")
-	k:ellipsoid(
-		"TieStripe",
-		v3(0.5, 0.1, 0.16),
-		Kit.on(torso, 0, 30, 0.04) * CFrame.Angles(0, 0, math.rad(-25)),
-		C.Gold,
-		Enum.Material.Foil,
-		"Body"
-	)
-	for i = 0, 2 do
-		k:ball("UniformButton", 0.16, Kit.surface(torso, 12, 30 - i * 25), goldDark, Enum.Material.Metal, "Body")
-	end
-	local star = Kit.on(torso, -26, 25, 0.08)
-	for i = 0, 4 do
-		k:wedge(
-			"StarPoint",
-			v3(0.08, 0.34, 0.16),
-			star * CFrame.Angles(0, 0, i * math.pi * 2 / 5) * CFrame.new(0, 0.2, 0),
-			rgb(255, 245, 200),
-			Enum.Material.Foil,
+
+	-- A three-layer tutu with a ruffled edge, and a leotard
+	for i, layer in
+		{
+			{ y = 2.35, size = 2.9, color = TUTU },
+			{ y = 2.44, size = 2.5, color = TUTU_LIGHT },
+			{ y = 2.53, size = 2.1, color = TUTU },
+		}
+	do
+		k:oval(
+			"Tutu",
+			CFrame.new(0, layer.y, 0) * CFrame.Angles(math.rad(i * 2 - 4), 0, 0),
+			layer.size,
+			layer.size,
+			0.12,
+			layer.color,
+			Enum.Material.Fabric,
 			"Body"
 		)
 	end
-	k:disc("StarCenter", 0.3, 0.1, star, rgb(255, 245, 200), Enum.Material.Foil, "Body")
-	k:band("Belt", torso, 2.05, 0.32, rgb(35, 30, 30), nil, "Body")
-	k:part(
-		"BeltBuckle",
-		v3(0.5, 0.4, 0.12),
-		Kit.on(torso, 0, -38, 0.1),
-		rgb(210, 215, 225),
-		Enum.Material.Metal,
-		"Body"
-	)
+	for i = 0, 15 do
+		local angle = i * math.pi * 2 / 16
+		k:ball(
+			"Ruffle",
+			0.34,
+			v3(math.cos(angle) * 1.4, 2.33, math.sin(angle) * 1.4),
+			if i % 2 == 0 then TUTU else TUTU_LIGHT,
+			Enum.Material.Fabric,
+			"Body"
+		)
+	end
+	local torso: Kit.Shell = { center = v3(0, 3.0, 0), radii = v3(0.56, 0.72, 0.44) }
+	local body =
+		k:ellipsoid("Leotard", torso.radii * 2, CFrame.new(torso.center), LEOTARD, Enum.Material.Fabric, "Body")
+	k:limb("Neck", v3(0, 3.4, 0), v3(0, 3.8, 0), 0.26, SKIN, nil, "Body")
+	for i = 0, 6 do
+		local angle = math.rad(-60 + i * 20)
+		k:ball(
+			"Pearl",
+			0.1,
+			v3(math.sin(angle) * 0.2, 3.52 - math.cos(angle) * 0.05, -math.cos(angle) * 0.14),
+			rgb(255, 250, 240),
+			nil,
+			"Body"
+		)
+	end
+
+	-- The cappuccino cup head, with lashes, rosy cheeks and a pink bow
+	local cup = Parts.cup(k, v3(0, 4.2, 0), 1.15, 0.92, { color = CUP, heart = true })
 	for _, side in { -1, 1 } do
-		k:ellipsoid(
-			"Epaulette",
-			v3(0.9, 0.3, 0.8),
-			CFrame.new(side * 1.25, 4.15, 0),
-			goldDark,
-			Enum.Material.Foil,
-			"Body"
-		)
-		for i = 0, 3 do
-			k:ball(
-				"Fringe",
-				0.14,
-				v3(side * (1.55 + i * 0.02), 3.95, -0.3 + i * 0.2),
-				goldDark,
-				Enum.Material.Foil,
+		local eye = Parts.onCup(cup, side * 24, 4.72, -0.04)
+		k:eye(eye, { width = 0.32, height = 0.38, iris = rgb(90, 60, 40), side = side }, "Body")
+		for lash = -1, 1 do
+			k:limb(
+				"Lash",
+				(eye * CFrame.new(side * (0.1 + lash * 0.05), 0.16, -0.08)).Position,
+				(eye * CFrame.new(side * (0.18 + lash * 0.09), 0.3, -0.12)).Position,
+				0.04,
+				C.Ink,
+				nil,
 				"Body"
 			)
 		end
+		k:blush(Parts.onCup(cup, side * 42, 4.42, 0.0), 0.3, "Body")
 	end
-	-- The twist: the warden has a prison number too
-	k:badge(Kit.on(torso, 30, 5, 0.03), "#001", 0.6, "Body")
-
-	-- Head: aviators, enormous mustache, peaked cap with a star badge
-	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center), skin, nil, "Body")
-	k:ellipsoid("Chin", v3(1.3, 0.8, 1.1), CFrame.new(0, 4.4, -0.35), skin, nil, "Body")
-	Parts.sunglasses(k, head, 22, 14, 0.62, C.Gold, rgb(30, 60, 90), "Body")
+	k:mouth(
+		Parts.onCup(cup, 0, 4.38, 0),
+		{ width = 0.34, height = 0.13, skin = CUP, style = "Smile", radius = 0.9 },
+		"Body"
+	)
+	local bow = Parts.onCup(cup, -70, 5.05, 0.05)
 	for _, side in { -1, 1 } do
 		k:ellipsoid(
-			"Mustache",
-			v3(0.95, 0.42, 0.38),
-			Kit.on(head, 18 * side, -20, 0.12) * CFrame.Angles(0, 0, math.rad(-14 * side)),
-			rgb(110, 70, 40),
-			nil,
-			"Body"
-		)
-		k:ellipsoid(
-			"Ear",
-			v3(0.25, 0.45, 0.35),
-			CFrame.new(head.center + v3(side * 0.98, -0.05, 0.1)),
-			skin,
-			nil,
+			"Bow",
+			v3(0.34, 0.26, 0.14),
+			bow * CFrame.new(side * 0.18, 0, 0) * CFrame.Angles(0, 0, math.rad(side * 20)),
+			LEOTARD,
+			Enum.Material.Fabric,
 			"Body"
 		)
 	end
-	k:ellipsoid("Nose", v3(0.36, 0.42, 0.4), Kit.on(head, 0, -4, 0.05), skin:Lerp(rgb(220, 140, 120), 0.4), nil, "Body")
-	k:mouth(Kit.on(head, 0, -36, -0.02), { width = 0.5, height = 0.2, skin = skin, style = "Flat", radius = 1 }, "Body")
-	local cap = CFrame.new(0, 6.05, -0.05)
-	k:cylinder("CapBand", 0.45, 2.0, cap, navy, Enum.Material.Fabric, "Body")
-	k:ellipsoid("CapTop", v3(2.35, 0.55, 2.35), cap * CFrame.new(0, 0.35, 0), navy, Enum.Material.Fabric, "Body")
-	k:cylinder("CapGold", 0.14, 2.03, cap * CFrame.new(0, -0.12, 0), gold, Enum.Material.Foil, "Body")
-	k:ellipsoid("Visor", v3(1.7, 0.16, 0.95), cap * CFrame.new(0, -0.22, -0.95), rgb(20, 20, 25), nil, "Body")
-	k:disc("CapBadge", 0.5, 0.1, cap * CFrame.new(0, 0.12, -1.02), gold, Enum.Material.Foil, "Body")
+	k:ball("BowKnot", 0.14, (bow * CFrame.new(0, 0, -0.04)).Position, LEOTARD, Enum.Material.Fabric, "Body")
 
-	-- Baton in one hand, keys on the belt, whistle
-	Parts.arm(k, "ArmR", v3(1.35, 3.9, 0), v3(1.95, 3.0, -0.55), 0.55, gold, skin, 0.6, Enum.Material.Foil)
-	k:limb("Baton", v3(1.95, 2.6, -0.6), v3(2.05, 4.1, -0.7), 0.24, rgb(25, 25, 30), nil, "ArmR")
-	Parts.arm(k, "ArmL", v3(-1.35, 3.9, 0), v3(-1.6, 2.35, 0.2), 0.55, gold, skin, 0.6, Enum.Material.Foil)
-	k:disc("KeyRing", 0.5, 0.08, CFrame.new(-1.15, 1.8, -0.75), rgb(210, 215, 225), Enum.Material.Metal, "Body")
-	for i = -1, 1 do
-		k:part(
-			"Key",
-			v3(0.08, 0.45, 0.05),
-			CFrame.new(-1.15 + i * 0.14, 1.5, -0.8) * CFrame.Angles(0, 0, i * 0.3),
-			C.Gold,
-			Enum.Material.Foil,
-			"Body"
-		)
+	-- Arms raised in an arc above the head (en couronne)
+	for _, side in { -1, 1 } do
+		local rig = if side < 0 then "ArmL" else "ArmR"
+		local shoulder = v3(side * 0.42, 3.3, 0)
+		local elbow = v3(side * 1.25, 4.4, -0.05)
+		local hand = v3(side * 0.3, 5.75, -0.05)
+		k:loft("Arm", {
+			{ at = shoulder, w = 0.13, h = 0.13 },
+			{ at = elbow, w = 0.12, h = 0.12 },
+			{ at = hand, w = 0.1, h = 0.1 },
+		}, SKIN, nil, rig, { density = 1.2, overlap = 4 })
+		k:ball("Hand", 0.2, hand, SKIN, nil, rig)
+		k.model:SetAttribute(rig .. "Joint", shoulder)
 	end
-	k:limb(
-		"WhistleCord",
-		Kit.surface(torso, 22, 45),
-		Kit.surface(torso, 30, 15),
-		0.06,
-		rgb(210, 215, 225),
-		Enum.Material.Metal,
-		"Body"
-	)
-	k:cylinder(
-		"Whistle",
-		0.35,
-		0.22,
-		Kit.on(torso, 30, 12, 0.12) * CFrame.Angles(math.pi / 2, 0, 0),
-		rgb(210, 215, 225),
-		Enum.Material.Metal,
-		"Body"
-	)
-
-	Parts.legs(k, 1.55, 0.6, 0.62, navy, rgb(25, 25, 30), rgb(60, 60, 70), 1.05, navy)
 	return body
 end
 
-Legendary.DragonDropout = function(k)
-	local teal = rgb(40, 185, 145)
-	local tealDark = rgb(25, 130, 110)
-	local belly = rgb(255, 225, 160)
-	local membrane = rgb(130, 90, 200)
-	local torso: Kit.Shell = { center = v3(0, 2.65, 0.1), radii = v3(1.5, 1.55, 1.4) }
-	local head: Kit.Shell = { center = v3(0, 4.55, -0.35), radii = v3(1.15, 1.02, 1.08) }
+---------------------------------------------------------------------------
+-- Tung Tung Tung Sahur: a wooden log with a baseball bat
+---------------------------------------------------------------------------
 
-	local body = k:ellipsoid("Body", torso.radii * 2, CFrame.new(torso.center), teal, nil, "Body")
-	local bellyShell: Kit.Shell = { center = torso.center + v3(0, -0.15, -0.6), radii = v3(1.12, 1.3, 0.9) }
-	k:ellipsoid("Belly", bellyShell.radii * 2, CFrame.new(bellyShell.center), belly, nil, "Body")
-	for i = 0, 3 do
-		k:band("BellyGroove", bellyShell, 1.85 + i * 0.45, 0.06, rgb(225, 180, 110), nil, "Body")
+Legendary.TungTungTungSahur = function(k: Kit): BasePart
+	local WOOD = rgb(214, 160, 104)
+	local GRAIN = rgb(176, 122, 74)
+	local CUT = rgb(240, 206, 150)
+	local BAT = rgb(190, 130, 70)
+
+	for _, side in { -1, 1 } do
+		k:limb("Leg", v3(side * 0.4, 1.55, 0), v3(side * 0.48, 0.3, -0.05), 0.24, WOOD, Enum.Material.Wood, "Legs")
+		k:ellipsoid("Foot", v3(0.4, 0.24, 0.66), CFrame.new(side * 0.5, 0.12, -0.2), WOOD, Enum.Material.Wood, "Legs")
 	end
-	for i = 0, 4 do
-		local at = Kit.surface(torso, 180, 55 - i * 25) + v3(0, 0, 0.05)
-		k:wedge(
-			"BackSpike",
-			v3(0.12, 0.55, 0.5),
-			CFrame.new(at + v3(0, 0.1, 0.1)) * CFrame.Angles(math.rad(-20 + i * 18), 0, 0),
-			belly,
-			nil,
+	-- The log: a tall wooden cylinder with a rounded top, grain lines and a knot
+	local radius, bottom, top = 0.85, 1.4, 4.7
+	local body = k:cylinder(
+		"Log",
+		top - bottom,
+		radius * 2,
+		CFrame.new(0, (bottom + top) / 2, 0),
+		WOOD,
+		Enum.Material.Wood,
+		"Body"
+	)
+	k:ellipsoid(
+		"LogBottom",
+		v3(radius * 2, 0.7, radius * 2),
+		CFrame.new(0, bottom, 0),
+		WOOD,
+		Enum.Material.Wood,
+		"Body"
+	)
+	k:oval(
+		"LogTop",
+		CFrame.new(0, top + 0.02, 0),
+		radius * 2 - 0.02,
+		radius * 2 - 0.02,
+		0.06,
+		CUT,
+		Enum.Material.Wood,
+		"Body"
+	)
+	for i, ring in { 1.3, 0.85, 0.4 } do
+		k:oval(
+			"TreeRing",
+			CFrame.new(0, top + 0.05 + i * 0.002, 0),
+			ring,
+			ring,
+			0.02,
+			GRAIN,
+			Enum.Material.Wood,
+			"Body"
+		)
+		k:oval(
+			"TreeRing",
+			CFrame.new(0, top + 0.055 + i * 0.002, 0),
+			ring - 0.1,
+			ring - 0.1,
+			0.02,
+			CUT,
+			Enum.Material.Wood,
 			"Body"
 		)
 	end
-
-	-- Head with snout, horns, ear fins
-	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center), teal, nil, "Body")
-	local snout = CFrame.new(0, 4.25, -1.3)
-	k:ellipsoid("Snout", v3(1.3, 0.85, 1.25), snout, teal, nil, "Body")
-	for _, side in { -1, 1 } do
-		k:ellipsoid("Nostril", v3(0.16, 0.12, 0.1), snout * CFrame.new(side * 0.3, 0.2, -0.58), tealDark, nil, "Body")
-		Parts.horn(k, head.center + v3(side * 0.55, 0.7, 0.2), v3(side * 0.35, 1, 0.45), 1.15, 0.36, belly, "Body")
-		k:ellipsoid(
-			"EarFin",
-			v3(0.18, 0.7, 0.6),
-			CFrame.new(head.center + v3(side * 1.1, 0.1, 0.2)) * CFrame.Angles(0, 0, math.rad(25 * side)),
-			membrane,
-			nil,
-			"Body"
-		)
-	end
-	k:eyes(head, 30, 24, {
-		width = 0.66,
-		height = 0.72,
-		iris = rgb(255, 170, 30),
-		look = Vector2.new(0.3, 0),
-		lid = 0.4,
-		lidTilt = -10,
-		skin = teal,
-	}, "Body")
-	k:mouth(
-		snout * CFrame.new(0, -0.3, -0.5),
-		{ width = 0.9, height = 0.3, skin = teal, style = "Smirk", radius = 0.8 },
-		"Body"
-	)
-	local ember = k:ball(
-		"Ember",
-		0.22,
-		(snout * CFrame.new(0.3, 0.3, -0.75)).Position,
-		rgb(255, 150, 40),
-		Enum.Material.Neon,
-		"Body"
-	)
-	fire(ember, 1.2, rgb(255, 150, 40), rgb(255, 60, 20))
-
-	-- Graduation cap, knocked sideways
-	Parts.gradCap(k, CFrame.new(-0.35, 5.3, -0.35) * CFrame.Angles(0, math.rad(-15), math.rad(18)), 1.9, "Body")
-
-	-- Bat wings
-	for _, side in { -1, 1 } do
-		local rig = if side > 0 then "WingR" else "WingL"
-		local root = v3(side * 0.9, 3.6, 0.9)
-		local tips =
-			{ root + v3(side * 1.6, 1.5, 0.4), root + v3(side * 2.1, 0.5, 0.5), root + v3(side * 1.7, -0.5, 0.5) }
-		for _, tip in tips do
-			k:limb("WingBone", root, tip, 0.16, tealDark, nil, rig)
-			k:ball("WingClaw", 0.2, tip, belly, nil, rig)
-		end
-		local edges = { tips[1], tips[2], tips[3], root + v3(side * 0.7, -1.1, 0.3) }
-		for i = 1, 3 do
-			local a, b = edges[i], edges[i + 1]
-			local mid = (a + b) / 2
-			local along = mid - root
-			local normal = along:Cross(b - a).Unit
-			local across = normal:Cross(along.Unit).Unit
-			local center = root + along * 0.55
-			k:ellipsoid(
-				"WingMembrane",
-				v3(along.Magnitude * 1.1, (b - a).Magnitude * 0.95, 0.07),
-				CFrame.fromMatrix(center, along.Unit, across, normal),
-				membrane,
-				nil,
-				rig
-			)
-		end
-		k.model:SetAttribute(rig .. "Joint", root)
-	end
-
-	-- Tail with a spade tip
-	local t1, t2, t3 = v3(0, 1.8, 1.3), v3(0.6, 1.2, 2.3), v3(1.4, 1.0, 2.7)
-	k:limb("Tail", t1, t2, 0.7, teal, nil, "Body")
-	k:limb("Tail", t2, t3, 0.5, teal, nil, "Body")
-	k:wedge(
-		"TailSpade",
-		v3(0.15, 0.7, 0.7),
-		CFrame.new(t3 + v3(0.35, 0.05, 0)) * CFrame.Angles(0, math.rad(90), math.rad(-60)),
-		membrane,
-		nil,
-		"Body"
-	)
-
-	-- Arms holding a failed exam
-	Parts.bareArm(k, "ArmR", v3(1.35, 3.1, 0), v3(2.05, 3.85, -0.45), 0.42, teal, 0.5)
-	Parts.bareArm(k, "ArmL", v3(-1.35, 3.1, 0), v3(-1.75, 2.25, -0.45), 0.42, teal, 0.5)
-	local exam = k:part(
-		"Exam",
-		v3(1.05, 1.25, 0.05),
-		CFrame.new(2.2, 4.45, -0.62) * CFrame.Angles(0, math.rad(-12), math.rad(-8)),
-		rgb(250, 250, 245),
-		nil,
-		"ArmR"
-	)
-	for i = 0, 2 do
+	local log: Parts.Cup = { center = v3(0, (bottom + top) / 2, 0), bottom = bottom, top = top, radius = radius }
+	for _, spec in
+		{
+			{ 70, 2.4, 1.6 },
+			{ 110, 3.2, 1.2 },
+			{ 150, 2.6, 1.8 },
+			{ -80, 2.2, 1.4 },
+			{ -125, 3.3, 1.6 },
+			{ 180, 3.0, 2.0 },
+		}
+	do
 		k:part(
-			"ExamLine",
-			v3(0.7, 0.05, 0.02),
-			exam.CFrame * CFrame.new(0, -0.3 - i * 0.15, -0.035),
-			rgb(150, 160, 190),
-			nil,
-			"ArmR"
+			"Grain",
+			v3(0.06, spec[3], 0.06),
+			Parts.onCup(log, spec[1], spec[2], -0.01),
+			GRAIN,
+			Enum.Material.Wood,
+			"Body"
 		)
 	end
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.Parent = exam
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.GothamBlack
-	label.TextScaled = true
-	label.TextColor3 = rgb(220, 40, 40)
-	label.Size = UDim2.fromScale(1, 0.55)
-	label.Text = "F-"
-	label.Parent = gui
+	k:ellipsoid("Knot", v3(0.34, 0.24, 0.12), Parts.onCup(log, -55, 2.05, -0.02), GRAIN, Enum.Material.Wood, "Body")
 
-	-- Stubby clawed legs
+	-- The famous stare and wide open mouth
 	for _, side in { -1, 1 } do
-		k:limb("Leg", v3(side * 0.75, 1.45, 0.1), v3(side * 0.8, 0.45, -0.05), 0.72, teal, nil, "Legs")
-		k:ellipsoid("Foot", v3(0.95, 0.5, 1.2), CFrame.new(side * 0.8, 0.25, -0.3), teal, nil, "Legs")
-		for c = -1, 1 do
-			k:wedge(
-				"Claw",
-				v3(0.12, 0.2, 0.25),
-				CFrame.new(side * 0.8 + c * 0.28, 0.12, -0.95) * CFrame.Angles(0, math.pi, 0),
-				belly,
-				nil,
+		local eye = Parts.onCup(log, side * 24, 3.75, -0.05)
+		k:eye(eye, { width = 0.5, height = 0.58, iris = rgb(30, 24, 20), side = side }, "Body")
+		k:ellipsoid(
+			"Brow",
+			v3(0.56, 0.14, 0.14),
+			eye * CFrame.new(0, 0.42, -0.02) * CFrame.Angles(0, 0, math.rad(side * -8)),
+			rgb(90, 60, 36),
+			nil,
+			"Body"
+		)
+	end
+	k:mouth(
+		Parts.onCup(log, 0, 2.95, 0),
+		{ width = 0.9, height = 0.5, skin = WOOD, style = "Grin", radius = 0.85 },
+		"Body"
+	)
+
+	-- Thin arms; the right hand grips a baseball bat resting on the shoulder
+	Parts.bareArm(k, "ArmL", v3(-0.8, 3.1, 0), v3(-1.3, 2.25, -0.2), 0.22, WOOD, 0.3)
+	Parts.bareArm(k, "ArmR", v3(0.8, 3.1, 0), v3(1.25, 2.7, -0.45), 0.22, WOOD, 0.3)
+	local grip = v3(1.25, 2.7, -0.45)
+	local batTip = v3(1.0, 5.35, 0.55)
+	Parts.tube(
+		k,
+		"Bat",
+		{ grip - (batTip - grip).Unit * 0.35, grip:Lerp(batTip, 0.35), grip:Lerp(batTip, 0.75), batTip },
+		{ 0.09, 0.1, 0.19, 0.22 },
+		BAT,
+		Enum.Material.Wood,
+		"ArmR",
+		{ density = 1.5, overlap = 5 }
+	)
+	k:ball("BatKnob", 0.22, grip - (batTip - grip).Unit * 0.38, rgb(120, 80, 45), Enum.Material.Wood, "ArmR")
+	k.model:SetAttribute("HeadTop", v3(0, top + 0.05, 0))
+	k.model:SetAttribute("HeadWidth", radius * 1.9)
+	return body
+end
+
+---------------------------------------------------------------------------
+-- Bombombini Gusini: a goose fighter jet
+---------------------------------------------------------------------------
+
+Legendary.BombombiniGusini = function(k: Kit): BasePart
+	local JET = rgb(172, 182, 198)
+	local JET_DARK = rgb(112, 122, 140)
+	local GOOSE = rgb(250, 250, 248)
+	local BEAK = rgb(255, 150, 40)
+	local FEET = rgb(255, 140, 50)
+
+	-- Webbed goose feet for landing gear
+	for _, spec in { { -0.6, -0.9 }, { 0.6, -0.9 }, { 0, 1.5 } } do
+		local x, z = spec[1], spec[2]
+		k:limb("Leg", v3(x, 1.7, z), v3(x, 0.3, z), 0.16, FEET, nil, "Legs")
+		for _, angle in { -32, 0, 32 } do
+			local dir = v3(math.sin(math.rad(angle)), 0, -math.cos(math.rad(angle)))
+			k:limb("Toe", v3(x, 0.2, z), v3(x, 0.14, z) + dir * 0.55, 0.14, FEET, nil, "Legs")
+		end
+		k:ellipsoid("Web", v3(0.7, 0.06, 0.5), CFrame.new(x, 0.1, z - 0.28), FEET, nil, "Legs")
+	end
+
+	-- Fuselage, canopy, swept wings, twin tails and a glowing exhaust
+	local body = k:loft("Fuselage", {
+		{ at = v3(0, 2.35, -2.2), w = 0.5, h = 0.5 },
+		{ at = v3(0, 2.4, -1.2), w = 0.82, h = 0.72 },
+		{ at = v3(0, 2.45, 0.4), w = 0.8, h = 0.7 },
+		{ at = v3(0, 2.5, 1.9), w = 0.55, h = 0.5 },
+		{ at = v3(0, 2.55, 2.5), w = 0.46, h = 0.42 },
+	}, JET, Enum.Material.Metal, "Body", { density = 1.2, overlap = 7 })
+	k:ellipsoid("Belly", v3(1.5, 0.9, 3.6), CFrame.new(0, 2.15, 0), GOOSE, nil, "Body")
+	local canopy = k:ellipsoid(
+		"Canopy",
+		v3(0.8, 0.62, 1.4),
+		CFrame.new(0, 3.02, -0.2),
+		rgb(120, 200, 250),
+		Enum.Material.Glass,
+		"Body"
+	)
+	canopy.Transparency = 0.2
+	canopy:SetAttribute("KeepColor", true)
+	for _, side in { -1, 1 } do
+		k:loft("Wing", {
+			{ at = v3(side * 0.6, 2.4, 0.2), w = 0.12, h = 0.95 },
+			{ at = v3(side * 1.9, 2.3, 0.85), w = 0.08, h = 0.55 },
+			{ at = v3(side * 2.8, 2.25, 1.25), w = 0.05, h = 0.26 },
+		}, JET, Enum.Material.Metal, "Body", { up = v3(0, 0, -1), density = 0.6, overlap = 4 })
+		k:ellipsoid("WingStripe", v3(0.5, 0.22, 0.5), CFrame.new(side * 2.2, 2.32, 1.02), rgb(230, 60, 60), nil, "Body")
+		Parts.leaf(
+			k,
+			"TailFin",
+			v3(side * 0.3, 2.8, 2.0),
+			v3(side * 0.62, 3.75, 2.55),
+			0.7,
+			0.08,
+			JET_DARK,
+			v3(side, 0, 0),
+			Enum.Material.Metal,
+			"Body"
+		)
+		-- A cartoon bomb under each wing
+		local bomb = v3(side * 1.55, 1.8, 0.7)
+		k:loft("Bomb", {
+			{ at = bomb + v3(0, 0, -0.5), w = 0.12, h = 0.12 },
+			{ at = bomb, w = 0.26, h = 0.26 },
+			{ at = bomb + v3(0, 0, 0.45), w = 0.14, h = 0.14 },
+		}, rgb(70, 76, 90), Enum.Material.Metal, "Body", { density = 1, overlap = 4 })
+		k:limb("Pylon", bomb + v3(0, 0.22, 0), bomb + v3(0, 0.5, 0), 0.08, JET_DARK, Enum.Material.Metal, "Body")
+		k:oval(
+			"BombBand",
+			CFrame.lookAt(bomb, bomb + Vector3.zAxis) * CFrame.Angles(math.pi / 2, 0, 0),
+			0.55,
+			0.55,
+			0.08,
+			rgb(255, 214, 60),
+			nil,
+			"Body"
+		)
+	end
+	k:cylinder(
+		"Exhaust",
+		0.2,
+		0.72,
+		CFrame.new(0, 2.55, 2.72) * CFrame.Angles(math.pi / 2, 0, 0),
+		rgb(50, 52, 60),
+		Enum.Material.Metal,
+		"Body"
+	)
+	k:disc("Afterburner", 0.5, 0.06, CFrame.new(0, 2.55, 2.84), rgb(255, 150, 60), Enum.Material.Neon, "Body")
+
+	-- The goose: long neck curving up from the nose, head with an orange beak
+	Parts.tube(
+		k,
+		"Neck",
+		{ v3(0, 2.6, -1.9), v3(0, 3.3, -2.35), v3(0, 4.0, -2.2), v3(0, 4.45, -2.35) },
+		{ 0.34, 0.26, 0.24, 0.26 },
+		GOOSE,
+		nil,
+		"Body",
+		{ density = 0.45, overlap = 6 }
+	)
+	local head: Kit.Shell = { center = v3(0, 4.6, -2.45), radii = v3(0.42, 0.4, 0.5) }
+	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center), GOOSE, nil, "Body")
+	k:loft("Beak", {
+		{ at = v3(0, 4.52, -2.85), w = 0.2, h = 0.15 },
+		{ at = v3(0, 4.46, -3.3), w = 0.13, h = 0.08 },
+	}, BEAK, nil, "Body", { density = 1, overlap = 4 })
+	k:ball("BeakKnob", 0.2, v3(0, 4.66, -2.86), rgb(40, 40, 46), nil, "Body")
+	k:eyes(
+		head,
+		42,
+		14,
+		{ width = 0.22, height = 0.26, iris = rgb(40, 30, 30), lid = 0.3, lidTilt = 16, skin = GOOSE },
+		"Body"
+	)
+	-- Pilot goggles
+	k:band("GoggleStrap", head, 4.72, 0.1, rgb(90, 60, 40), Enum.Material.Leather, "Body")
+	k:turn(-35)
+	return body[3]
+end
+
+---------------------------------------------------------------------------
+-- Girafa Celestre: a giraffe astronaut
+---------------------------------------------------------------------------
+
+Legendary.GirafaCelestre = function(k: Kit): BasePart
+	local GIRAFFE = rgb(250, 204, 92)
+	local SPOT = rgb(186, 110, 50)
+	local SUIT = rgb(52, 76, 170)
+	local SUIT_TRIM = rgb(236, 240, 250)
+	local BOOT = rgb(200, 204, 214)
+
+	for _, x in { -0.55, 0.55 } do
+		for _, z in { -0.6, 0.7 } do
+			k:limb("Leg", v3(x, 2.1, z), v3(x, 0.45, z), 0.3, GIRAFFE, nil, "Legs")
+			k:oval("Boot", CFrame.new(x, 0.3, z), 0.48, 0.48, 0.6, BOOT, Enum.Material.Fabric, "Legs")
+			k:oval(
+				"BootSole",
+				CFrame.new(x, 0.05, z - 0.04),
+				0.5,
+				0.56,
+				0.1,
+				rgb(70, 72, 84),
+				Enum.Material.Rubber,
 				"Legs"
 			)
+			k:oval("BootTrim", CFrame.new(x, 0.62, z), 0.5, 0.5, 0.08, SUIT_TRIM, nil, "Legs")
 		end
 	end
+	-- Body in a spacesuit vest, with a jetpack
+	local shell: Kit.Shell = { center = v3(0, 2.55, 0.05), radii = v3(0.85, 0.72, 1.2) }
+	local body = k:ellipsoid("Body", shell.radii * 2, CFrame.new(shell.center), GIRAFFE, nil, "Body")
+	k:ellipsoid("SpaceSuit", v3(1.86, 1.5, 2.3), CFrame.new(0, 2.6, 0.0), SUIT, Enum.Material.Fabric, "Body")
+	k:band("SuitTrim", { center = v3(0, 2.6, -0.1), radii = v3(0.9, 0.65, 0.95) }, 2.3, 0.1, SUIT_TRIM, nil, "Body")
+	k:disc(
+		"MissionPatch",
+		0.5,
+		0.06,
+		CFrame.new(0.62, 2.78, -0.62) * CFrame.Angles(0, math.rad(-40), 0),
+		SUIT_TRIM,
+		nil,
+		"Body"
+	)
+	k:ball("PatchStar", 0.2, v3(0.66, 2.79, -0.68), rgb(255, 220, 80), nil, "Body")
+	-- A constellation of little stars across the suit
+	local suitShell: Kit.Shell = { center = v3(0, 2.6, 0), radii = v3(0.93, 0.75, 1.15) }
+	for i = 1, 9 do
+		local yaw = ((i * 137.5) % 300) - 150
+		local pitch = -10 + (i * 37) % 60
+		k:ball(
+			"SuitStar",
+			0.1 + (i % 3) * 0.03,
+			(Kit.surface(suitShell, yaw, pitch)),
+			rgb(255, 226, 110),
+			Enum.Material.Neon,
+			"Body"
+		)
+	end
+	local pack = CFrame.new(0, 3.1, 0.75)
+	k:part("Jetpack", v3(1.0, 0.9, 0.5), pack, rgb(200, 205, 220), Enum.Material.Metal, "Body")
+	for _, side in { -1, 1 } do
+		k:cylinder(
+			"Thruster",
+			0.5,
+			0.34,
+			pack * CFrame.new(side * 0.32, -0.55, 0.05),
+			rgb(90, 95, 110),
+			Enum.Material.Metal,
+			"Body"
+		)
+		local nozzle = (pack * CFrame.new(side * 0.32, -0.82, 0.05)).Position
+		Parts.cone(k, "Flame", nozzle, nozzle + v3(0, -0.55, 0.1), 0.15, rgb(255, 170, 60), Enum.Material.Neon, "Body")
+	end
+	Parts.tube(
+		k,
+		"Tail",
+		{ v3(0, 2.6, 1.2), v3(0, 2.1, 1.45), v3(0, 1.6, 1.5) },
+		{ 0.08, 0.07, 0.06 },
+		GIRAFFE,
+		nil,
+		"Body",
+		{ density = 3 }
+	)
+	k:ellipsoid("TailTuft", v3(0.22, 0.4, 0.22), CFrame.new(0, 1.45, 1.5), SPOT, nil, "Body")
+
+	-- The long spotted neck and head inside a glass helmet
+	local neckPoints = { v3(0, 2.9, -0.8), v3(0, 3.9, -1.0), v3(0, 4.8, -1.05) }
+	Parts.tube(k, "Neck", neckPoints, { 0.38, 0.3, 0.26 }, GIRAFFE, nil, "Body", { density = 1, overlap = 6 })
+	for i, spot in { { 3.4, -1.3, 0 }, { 4.1, -1.25, 50 }, { 3.7, -0.72, 110 }, { 4.5, -1.1, -60 } } do
+		local _ = i
+		k:ellipsoid(
+			"Spot",
+			v3(0.26, 0.3, 0.1),
+			CFrame.lookAt(
+				v3(math.sin(math.rad(spot[3])) * 0.3, spot[1], spot[2]),
+				v3(math.sin(math.rad(spot[3])) * 2, spot[1], spot[2] - 1)
+			),
+			SPOT,
+			nil,
+			"Body"
+		)
+	end
+	for _, spot in { { 70, 20 }, { -70, 10 }, { 110, -20 }, { -120, 0 }, { 150, 30 } } do
+		Parts.patch(k, "Spot", shell, spot[1], spot[2], 0.42, 0.34, SPOT, nil, "Body")
+	end
+	local head: Kit.Shell = { center = v3(0, 5.15, -1.2), radii = v3(0.5, 0.45, 0.62) }
+	k:ellipsoid("Head", head.radii * 2, CFrame.new(head.center), GIRAFFE, nil, "Body")
+	k:ellipsoid("Muzzle", v3(0.7, 0.5, 0.6), CFrame.new(0, 5.0, -1.65), rgb(245, 222, 170), nil, "Body")
+	for _, side in { -1, 1 } do
+		k:limb("Ossicone", v3(side * 0.2, 5.5, -1.1), v3(side * 0.26, 5.9, -1.05), 0.12, GIRAFFE, nil, "Body")
+		k:ball("OssiconeTip", 0.2, v3(side * 0.26, 5.95, -1.05), SPOT, nil, "Body")
+		Parts.leaf(
+			k,
+			"Ear",
+			v3(side * 0.38, 5.35, -1.05),
+			v3(side * 0.75, 5.45, -0.95),
+			0.24,
+			0.06,
+			GIRAFFE,
+			v3(0, 0.3, -1).Unit,
+			nil,
+			"Body"
+		)
+		k:ball("Nostril", 0.07, v3(side * 0.14, 5.08, -1.94), rgb(120, 80, 50), nil, "Body")
+	end
+	k:eyes(head, 38, 16, { width = 0.24, height = 0.28, iris = rgb(40, 30, 30) }, "Body")
+	k:mouth(
+		CFrame.new(0, 4.86, -1.9),
+		{ width = 0.3, height = 0.1, skin = rgb(245, 222, 170), style = "Smile", radius = 0.4 },
+		"Body"
+	)
+	local helmet = k:ball("Helmet", 1.75, v3(0, 5.25, -1.25), rgb(210, 235, 255), Enum.Material.Glass, "Body")
+	helmet.Transparency = 0.55
+	helmet.CastShadow = false
+	helmet:SetAttribute("KeepColor", true)
+	k:ball("HelmetShine", 0.22, v3(-0.4, 5.72, -1.9), C.White, nil, "Body")
+	k:oval(
+		"HelmetRing",
+		CFrame.new(0, 4.42, -1.12) * CFrame.Angles(math.rad(-8), 0, 0),
+		1.0,
+		1.0,
+		0.16,
+		SUIT_TRIM,
+		Enum.Material.Metal,
+		"Body"
+	)
+	k:turn(-28)
 	return body
 end
 

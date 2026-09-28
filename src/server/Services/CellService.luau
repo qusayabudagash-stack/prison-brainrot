@@ -60,7 +60,10 @@ local function refresh(player: Player)
 	for index, stack in best do
 		local anchor = cell:FindFirstChild(`Display{index}`)
 		if anchor and anchor:IsA("BasePart") and displays then
-			local model = BrainrotModel.build(stack.id, { variant = stack.variant, scale = 0.8 })
+			-- Fit every Brainrot on its pedestal, from a small Common to a long Divine shark
+			local bounds = BrainrotModel.bounds(stack.id)
+			local scale = math.min(0.85, 4.8 / math.max(bounds.X, 1), 5.6 / math.max(bounds.Y, 1))
+			local model = BrainrotModel.build(stack.id, { variant = stack.variant, scale = scale })
 			model:PivotTo(anchor.CFrame)
 			model.Parent = displays
 			local body = model:FindFirstChild("Body")

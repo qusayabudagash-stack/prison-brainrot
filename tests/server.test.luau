@@ -100,9 +100,9 @@ T.run(function()
 		end
 	end
 	print(`  (map has {parts} parts)`)
-	-- A furnished prison (cells, props, six machines) is a few thousand anchored parts; keep it well under
-	-- what mobile devices handle comfortably.
-	check("map stays within its part budget (< 7000 parts)", parts < 7000, parts)
+	-- A furnished prison (architecture, cells, props, six machines) is several thousand anchored,
+	-- non-colliding-detail parts; keep it well under what mobile devices handle comfortably.
+	check("map stays within its part budget (< 8000 parts)", parts < 8000, parts)
 	check("a Roll prompt on every machine", actions.Roll == 6, actions.Roll)
 	check("an Unlock prompt on every gate", actions.Unlock == 5, actions.Unlock)
 	for _, action in { "Shop", "Upgrades", "Book", "Rebirth", "FreeBoost", "DailyRoll" } do
@@ -119,7 +119,7 @@ T.run(function()
 	---------------------------------------------------------------------------
 	local alice, data = join(1001, "Alice")
 	check("starts with $100", data.coins == 100, data.coins)
-	check("starts with one Potato Prisoner", data.brainrots.PotatoPrisoner.Normal == 1)
+	check("starts with one Tim Cheese", data.brainrots.TimCheese.Normal == 1)
 	check("starts in Cell Block 1", data.unlockedAreas.CellBlock1 == true and Formulas.unlockedCount(data) == 1)
 	check("tutorial not done yet", data.tutorialDone == false)
 	task.wait(0.2)
@@ -128,13 +128,13 @@ T.run(function()
 	check("snapshot has no server-only meta", snapshot.data.meta == nil)
 	check("leaderstats created", alice:FindFirstChild("leaderstats") ~= nil)
 	check("Coins attribute set", alice:GetAttribute("Coins") == 100, alice:GetAttribute("Coins"))
-	check("income is +$5/sec from the Potato", alice:GetAttribute("Income") == 5, alice:GetAttribute("Income"))
+	check("income is +$5/sec from Tim Cheese", alice:GetAttribute("Income") == 5, alice:GetAttribute("Income"))
 	local cell = cellOf(alice)
 	check("got a cell", cell ~= nil)
 	if cell then
 		local label = cell:FindFirstChild("OwnerText", true)
 		check("cell shows the player's name", label and string.find(label.Text, "ALICE") ~= nil, label and label.Text)
-		check("cell shows the Potato on a pedestal", #cell.Displays:GetChildren() == 1)
+		check("cell shows Tim Cheese on a pedestal", #cell.Displays:GetChildren() == 1)
 	end
 	engine:fireServer(alice, "CompleteTutorial")
 	task.wait(0.1)
@@ -190,7 +190,7 @@ T.run(function()
 	end
 	check("unknown upgrade rejected", engine:invoke(alice, "BuyUpgrade", "Hax").ok == false)
 	check("nil upgrade rejected", engine:invoke(alice, "BuyUpgrade", nil).ok == false)
-	check("combining Diamond rejected", engine:invoke(alice, "Combine", "PotatoPrisoner", "Diamond").ok == false)
+	check("combining Diamond rejected", engine:invoke(alice, "Combine", "TimCheese", "Diamond").ok == false)
 	check("combining unknown Brainrot rejected", engine:invoke(alice, "Combine", "Nope", "Normal").ok == false)
 	check("skipping a block rejected", engine:invoke(alice, "UnlockArea", "DeathRow").ok == false)
 	check("unknown cosmetic rejected", engine:invoke(alice, "BuyCosmetic", "Hax").ok == false)
@@ -249,22 +249,22 @@ T.run(function()
 	---------------------------------------------------------------------------
 	section("Duplicates, Golden and Diamond")
 	---------------------------------------------------------------------------
-	BrainrotService.grant(data, "ChickenThief", "Normal", 10)
-	local chicken = data.brainrots.ChickenThief
-	local normalBefore, goldenBefore = chicken.Normal, chicken.Golden
-	local combined = engine:invoke(alice, "Combine", "ChickenThief", "Normal")
+	BrainrotService.grant(data, "LiriliLarila", "Normal", 10)
+	local lirili = data.brainrots.LiriliLarila
+	local normalBefore, goldenBefore = lirili.Normal, lirili.Golden
+	local combined = engine:invoke(alice, "Combine", "LiriliLarila", "Normal")
 	check(
 		"combine 3 into a Golden",
-		combined.ok and chicken.Normal == normalBefore - 3 and chicken.Golden == goldenBefore + 1
+		combined.ok and lirili.Normal == normalBefore - 3 and lirili.Golden == goldenBefore + 1
 	)
-	check("Golden variant recorded", data.variantsFound.ChickenThief and data.variantsFound.ChickenThief.Golden == true)
+	check("Golden variant recorded", data.variantsFound.LiriliLarila and data.variantsFound.LiriliLarila.Golden == true)
 	check(
 		"Golden earns 2x",
-		BrainrotData.income("ChickenThief", "Golden") == 2 * BrainrotData.income("ChickenThief", "Normal")
+		BrainrotData.income("LiriliLarila", "Golden") == 2 * BrainrotData.income("LiriliLarila", "Normal")
 	)
 	check(
 		"Diamond earns 5x",
-		BrainrotData.income("ChickenThief", "Diamond") == 5 * BrainrotData.income("ChickenThief", "Normal")
+		BrainrotData.income("LiriliLarila", "Diamond") == 5 * BrainrotData.income("LiriliLarila", "Normal")
 	)
 
 	local worth = {}
@@ -546,6 +546,32 @@ T.run(function()
 	task.wait(0.3)
 	check("won't overwrite a save another server took over", engine.storage[STORE]["Player_2002"].coins == 999)
 	check("warns about it", #engine.warnings > warningsBefore)
+
+	---------------------------------------------------------------------------
+	section("Saves from before the Brainrot rename")
+	---------------------------------------------------------------------------
+	local oldRecord = DataService.template() :: any
+	oldRecord.brainrots = {
+		PotatoPrisoner = { Normal = 2, Golden = 1, Diamond = 0 },
+		TimCheese = { Normal = 1, Golden = 0, Diamond = 0 },
+		PrisonKing = { Normal = 1, Golden = 0, Diamond = 0 },
+	}
+	oldRecord.discovered = { PotatoPrisoner = true, TimCheese = true, PrisonKing = true }
+	oldRecord.variantsFound = { PotatoPrisoner = { Golden = true } }
+	engine.storage[STORE]["Player_2003"] = oldRecord
+	local erin, erinData = join(2003, "Erin")
+	check(
+		"renamed Brainrots keep their counts",
+		erinData.brainrots.TimCheese.Normal == 3 and erinData.brainrots.TimCheese.Golden == 1
+	)
+	check("old ids are removed", erinData.brainrots.PotatoPrisoner == nil and erinData.discovered.PrisonKing == nil)
+	check(
+		"renamed discoveries are kept",
+		erinData.discovered.BallerinaCappuccina == true and erinData.brainrots.BallerinaCappuccina.Normal == 1
+	)
+	check("renamed variants are kept", erinData.variantsFound.TimCheese.Golden == true)
+	engine:removePlayer(erin)
+	task.wait(0.2)
 
 	---------------------------------------------------------------------------
 	section("DataStore outage")

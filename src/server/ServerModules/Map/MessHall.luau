@@ -20,14 +20,20 @@ local rgb = Color3.fromRGB
 local Y = MapLayout.FLOOR_Y
 local BOX = MapLayout.MessHall
 local X1 = BOX.x1 + 2 -- inside face of the hall's wall
-local TILE_A = rgb(214, 206, 186)
-local TILE_B = rgb(176, 160, 132)
-local STYLE: Structure.WallStyle =
-	{ wall = rgb(222, 214, 196), paint = rgb(150, 110, 70), paintHeight = 7, thickness = 2 }
+-- A warm retro cafeteria: cream and terracotta checkerboard, orange walls with a teal stripe
+local TILE_A = rgb(238, 228, 208)
+local TILE_B = rgb(214, 128, 86)
+local STYLE: Structure.WallStyle = {
+	wall = Palette.Concrete,
+	paint = rgb(222, 126, 62),
+	stripe = Palette.Paint,
+	paintHeight = 7,
+	thickness = 2,
+}
 
 local function shell(folder: Instance)
 	local h = BOX.height
-	Structure.floor(folder, "Floor", X1, BOX.x2, BOX.z1, BOX.z2, Y, TILE_A, M.Slate)
+	Structure.floor(folder, "Floor", X1, BOX.x2, BOX.z1, BOX.z2, Y, TILE_A, M.CeramicTiles)
 	local s = Shapes.new(folder, CFrame.new(0, Y, 0))
 	-- Checkerboard tiles (every other one is a darker tile laid on the floor)
 	local size = 7
@@ -39,7 +45,7 @@ local function shell(folder: Instance)
 					v3(size, 0.04, size),
 					CFrame.new(X1 + (ix + 0.5) * size, 0.02, BOX.z1 + (iz + 0.5) * size),
 					TILE_B,
-					M.Slate
+					M.CeramicTiles
 				)
 				tile.CastShadow = false
 			end

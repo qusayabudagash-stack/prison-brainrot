@@ -55,7 +55,7 @@ local function addPrompt(part: BasePart, actionText: string, objectText: string)
 end
 
 local function spawnPrisonKing(): () -> ()
-	local model = BrainrotModel.build("PrisonKing", { variant = "Golden", scale = 3 })
+	local model = BrainrotModel.build("TungTungTungSahur", { variant = "Golden", scale = 2.6, crowned = true })
 	model.Name = "EventPrisonKing"
 	model:PivotTo(MapService.kingCFrame)
 	model.Parent = MapService.eventFolder
