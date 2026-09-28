@@ -134,6 +134,8 @@ src/shared/Modules     -> ReplicatedStorage.Modules       shared data and logic
   RollSystem             odds, luck, pity and rolling math
   Formulas               income, capacity, luck and costs
   BrainrotModel          builds a Brainrot from its design, adds rarity and variant effects
+  BrainrotAssetIds       free Creator Store models used instead of built-in designs
+  BrainrotAssets         cleans those models (scripts removed) for ReplicatedStorage.BrainrotAssets
   Brainrots/             the character designs: Kit (shapes, smooth lofts, faces, teeth), Parts
                          (sneakers, tubes, fins, cups, rings, props), one module per rarity, and
                          Effects (light rarity FX)
@@ -142,7 +144,8 @@ src/shared/Modules     -> ReplicatedStorage.Modules       shared data and logic
 src/server             -> ServerScriptService
   Main.server.luau       starts every service
   Services/              DataService, RollService, EconomyService, UpgradeService, RebirthService,
-                         EventService, LeaderboardService, MapService, CellService, ShopService, ...
+                         EventService, LeaderboardService, MapService, CellService, ShopService,
+                         BrainrotAssetService (loads Creator Store models at start), ...
   ServerModules/         part-building helpers, request guard, rate limiter, cell cosmetics
     Map/                 the prison: Palette, Shapes, Structure, Props (set dressing), Themes
                          (per-block colors), RollMachine, Stations, Hall, CellWing, MessHall, Yard,
@@ -152,6 +155,8 @@ src/client             -> StarterPlayer.StarterPlayerScripts.Client
   Controllers/           player state, remote calls, sounds, prompts, gates, Animator (Brainrot idle
                          animation), Machines (machine lights and world props), Ambience (lighting)
 tests/                 Lune tests that run the real scripts outside Studio (not part of the game)
+tools/studio/          Studio command-bar scripts (insert the Creator Store models into the place)
+tools/models/          Blender model pipeline (dev tooling, not part of the game)
 ```
 
 The UI is built in code, so the ScreenGuis appear in each player's PlayerGui (not StarterGui) at runtime.
@@ -169,10 +174,26 @@ The map is built by `MapService` into `Workspace.Lobby`, `Prison`, `CellBlocks`,
   client animates them. `Kit.loft` builds smooth tapered bodies, tails and fins from a list of sections.
   Brainrot ids that were renamed are listed in `BrainrotData.LegacyIds`, and old saves are migrated on
   load.
-- **Swapping in a real 3D model**: put a Model named after the Brainrot's id (e.g. `TralaleroTralala`)
-  in a Folder called `BrainrotAssets` in ReplicatedStorage. It replaces the built-in design everywhere
-  (cells, machines, roll cards); face it towards -Z and name its main part `Body`. Only use models you
-  made or have the rights to use (for example Creator Store assets whose license allows it).
+- **Creator Store models**: `Modules/BrainrotAssetIds.luau` lists free Creator Store models used
+  instead of the built-in designs (19 of 32 so far; the rest keep their design). Only models that look
+  like their uploader's own work are listed: re-uploads of other games' models (there are many copies
+  of Steal a Brainrot's) are left out because they risk copyright takedowns. Entries marked
+  `reviewed = false` had no preview on Roblox, so check them. Two ways to get them into the game:
+  - **In Studio (recommended)**: paste `tools/studio/insert_brainrot_models.lua` into the Command Bar
+    (View > Command Bar), press Enter, then save the place. The models are stored in
+    ReplicatedStorage.BrainrotAssets with every script removed, and you can see them while editing.
+  - **At server start**: `BrainrotAssetService` loads any listed model that isn't in the place yet.
+    Roblox only allows this for models the game's owner has, so "Get" each one on its Creator Store
+    page with the account or group that owns the game. Failures fall back to the built-in design and
+    are listed in one warning.
+
+  Models are resized to their built-in design's height, centered and grounded automatically. If one
+  faces the wrong way, give it a `FacingYaw` attribute (degrees) or set `facing` in its entry. Golden
+  and Diamond variants turn textured models fully gold or crystal.
+- **Swapping in your own 3D model**: put a Model named after the Brainrot's id (e.g. `TralaleroTralala`)
+  in the `BrainrotAssets` folder in ReplicatedStorage. It replaces the built-in design everywhere
+  (cells, machines, roll cards); name its main part `Body`. Only use models you made or have the rights
+  to use.
 
 ## Tuning
 

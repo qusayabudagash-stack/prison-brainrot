@@ -6,6 +6,7 @@
 
 local fs = require("@lune/fs")
 local process = require("@lune/process")
+local roblox = require("@lune/roblox")
 local task = require("@lune/task")
 
 local Engine = require("./engine")
@@ -34,6 +35,17 @@ GameConfig.DATA.retries = 2
 GameConfig.LEADERBOARD.refreshInterval = 0.5
 
 T.run(function()
+	-- One Creator Store model is "available" (with a script hidden inside); the rest fail to load
+	local BrainrotAssetIds = engine:require(Modules.BrainrotAssetIds)
+	engine.assets[BrainrotAssetIds.TralaleroTralala.assetId] = function()
+		local shark = roblox.Instance.new("Model")
+		local body = roblox.Instance.new("Part")
+		body.Name = "Body"
+		body.Size = roblox.Vector3.new(4, 3, 8)
+		body.Parent = shark
+		roblox.Instance.new("Script").Parent = body
+		return shark
+	end
 	engine:run(game:GetService("ServerScriptService").Main)
 	task.wait(0.3)
 
@@ -51,6 +63,26 @@ T.run(function()
 
 	local STORE = GameConfig.DATA.storeName
 	local check, section = T.check, T.section
+
+	section("Creator Store models")
+	local loadedAssets = engine.ReplicatedStorage:FindFirstChild("BrainrotAssets")
+	local loadedShark = loadedAssets and loadedAssets:FindFirstChild("TralaleroTralala")
+	check("a Creator Store model loads into ReplicatedStorage.BrainrotAssets at startup", loadedShark ~= nil)
+	local scriptsLeft = 0
+	for _, descendant in (if loadedShark then loadedShark:GetDescendants() else {}) do
+		if descendant:IsA("LuaSourceContainer") then
+			scriptsLeft += 1
+		end
+	end
+	check("its scripts are stripped", loadedShark ~= nil and scriptsLeft == 0)
+	local warnedAboutAssets = false
+	for _, warning in engine.warnings do
+		warnedAboutAssets = warnedAboutAssets or string.find(warning, "could not load", 1, true) ~= nil
+	end
+	check(
+		"models that fail to load are reported and keep the built-in design",
+		warnedAboutAssets and loadedAssets ~= nil and loadedAssets:FindFirstChild("TimCheese") == nil
+	)
 
 	local function join(userId, name)
 		local player = engine:addPlayer(userId, name)
