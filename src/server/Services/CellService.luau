@@ -72,7 +72,7 @@ local function refresh(player: Player)
 						stack.income
 					)}/s`,
 					Vector2.new(7, 1.8),
-					3.2
+					BrainrotModel.labelOffset(model, 1.1)
 				)
 			end
 		end

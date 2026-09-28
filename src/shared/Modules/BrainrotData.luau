@@ -19,18 +19,6 @@ export type Rarity = {
 	announce: boolean,
 }
 
-export type Look = {
-	body: string,
-	color: Color3,
-	accent: Color3?,
-	material: Enum.Material?,
-	eyes: string?,
-	mouth: string?,
-	hat: string?,
-	stripes: boolean?,
-	extras: { string }?,
-}
-
 export type Brainrot = {
 	id: string,
 	name: string,
@@ -38,7 +26,6 @@ export type Brainrot = {
 	rarity: string,
 	income: number,
 	description: string,
-	look: Look,
 }
 
 export type Variant = {
@@ -138,8 +125,6 @@ BrainrotData.Variants = {
 	{ id = "Diamond", name = "Diamond", prefix = "💎 ", multiplier = 5, color = Color3.fromRGB(140, 235, 255) },
 } :: { Variant }
 
-local C = Color3.fromRGB
-
 BrainrotData.Brainrots = {
 	-- COMMON
 	{
@@ -149,7 +134,6 @@ BrainrotData.Brainrots = {
 		rarity = "Common",
 		income = 5,
 		description = "Arrested for being a couch potato.",
-		look = { body = "Egg", color = C(196, 150, 90), hat = "PrisonCap", stripes = true, extras = { "Sprout" } },
 	},
 	{
 		id = "ChickenThief",
@@ -158,7 +142,6 @@ BrainrotData.Brainrots = {
 		rarity = "Common",
 		income = 6,
 		description = "Stole 400 eggs. Says they were his.",
-		look = { body = "Round", color = C(250, 250, 245), extras = { "Beak", "Comb", "Mask", "Wings" } },
 	},
 	{
 		id = "BananaJailbird",
@@ -167,7 +150,6 @@ BrainrotData.Brainrots = {
 		rarity = "Common",
 		income = 7,
 		description = "Slipped out of three prisons.",
-		look = { body = "Tall", color = C(255, 225, 60), stripes = true, extras = { "Stem" } },
 	},
 	{
 		id = "SockSnatcher",
@@ -176,13 +158,6 @@ BrainrotData.Brainrots = {
 		rarity = "Common",
 		income = 8,
 		description = "Only ever steals the left sock.",
-		look = {
-			body = "Tall",
-			color = C(235, 235, 245),
-			accent = C(230, 60, 60),
-			hat = "Beanie",
-			stripes = true,
-		},
 	},
 	{
 		id = "BreadBandit",
@@ -191,7 +166,6 @@ BrainrotData.Brainrots = {
 		rarity = "Common",
 		income = 9,
 		description = "A loaf on the run.",
-		look = { body = "Box", color = C(235, 180, 110), accent = C(170, 110, 60), extras = { "Mask" } },
 	},
 
 	-- UNCOMMON
@@ -202,7 +176,6 @@ BrainrotData.Brainrots = {
 		rarity = "Uncommon",
 		income = 15,
 		description = "Hops over every fence. Ribbit.",
-		look = { body = "Wide", color = C(90, 200, 90), eyes = "Top", mouth = "Wide", hat = "PrisonCap" },
 	},
 	{
 		id = "EscapeDuck",
@@ -211,7 +184,6 @@ BrainrotData.Brainrots = {
 		rarity = "Uncommon",
 		income = 18,
 		description = "Swam out through the prison bathtub.",
-		look = { body = "Round", color = C(255, 220, 70), hat = "Beanie", extras = { "DuckBill", "Wings" } },
 	},
 	{
 		id = "PizzaCriminal",
@@ -220,7 +192,6 @@ BrainrotData.Brainrots = {
 		rarity = "Uncommon",
 		income = 22,
 		description = "Wanted for extra cheese.",
-		look = { body = "Wide", color = C(255, 195, 80), hat = "Chef", extras = { "Pepperoni" } },
 	},
 	{
 		id = "DonutDetainee",
@@ -229,7 +200,6 @@ BrainrotData.Brainrots = {
 		rarity = "Uncommon",
 		income = 25,
 		description = "Serving a hole sentence.",
-		look = { body = "Round", color = C(255, 150, 190), hat = "PrisonCap", extras = { "Sprinkles" } },
 	},
 	{
 		id = "CactusCrook",
@@ -238,7 +208,6 @@ BrainrotData.Brainrots = {
 		rarity = "Uncommon",
 		income = 28,
 		description = "Nobody hugs him. Nobody.",
-		look = { body = "Tall", color = C(70, 175, 80), eyes = "Angry", hat = "Flower", extras = { "Spikes" } },
 	},
 
 	-- RARE
@@ -249,13 +218,6 @@ BrainrotData.Brainrots = {
 		rarity = "Rare",
 		income = 50,
 		description = "Has lived in Cell Block 1 since the stone age.",
-		look = {
-			body = "Box",
-			color = C(150, 155, 165),
-			material = Enum.Material.Slate,
-			eyes = "Angry",
-			extras = { "BigNose", "Unibrow" },
-		},
 	},
 	{
 		id = "RichPrisoner",
@@ -264,12 +226,6 @@ BrainrotData.Brainrots = {
 		rarity = "Rare",
 		income = 65,
 		description = "Bribed the guards with chocolate coins.",
-		look = {
-			body = "Wide",
-			color = C(255, 170, 190),
-			hat = "TopHat",
-			extras = { "PigNose", "PigEars", "MoneyBag", "Monocle" },
-		},
 	},
 	{
 		id = "JuiceSmuggler",
@@ -278,7 +234,6 @@ BrainrotData.Brainrots = {
 		rarity = "Rare",
 		income = 80,
 		description = "Smuggles apple juice in his pockets.",
-		look = { body = "Box", color = C(110, 190, 255), accent = C(255, 120, 60), extras = { "Straw", "Label" } },
 	},
 	{
 		id = "RoboRascal",
@@ -287,13 +242,6 @@ BrainrotData.Brainrots = {
 		rarity = "Rare",
 		income = 90,
 		description = "Beep boop. Escape plan loading...",
-		look = {
-			body = "Box",
-			color = C(175, 185, 205),
-			material = Enum.Material.DiamondPlate,
-			hat = "Antenna",
-			extras = { "Visor" },
-		},
 	},
 	{
 		id = "CheeseEscapee",
@@ -302,7 +250,6 @@ BrainrotData.Brainrots = {
 		rarity = "Rare",
 		income = 100,
 		description = "Too holey to stay in one cell.",
-		look = { body = "Box", color = C(255, 210, 70), accent = C(215, 165, 40), extras = { "Holes" } },
 	},
 
 	-- EPIC
@@ -313,7 +260,6 @@ BrainrotData.Brainrots = {
 		rarity = "Epic",
 		income = 150,
 		description = "Arrested for parking a UFO in the yard.",
-		look = { body = "Egg", color = C(130, 255, 130), eyes = "Alien", hat = "Antenna", extras = { "Glow" } },
 	},
 	{
 		id = "DiamondCriminal",
@@ -322,12 +268,6 @@ BrainrotData.Brainrots = {
 		rarity = "Epic",
 		income = 200,
 		description = "Stole a diamond. Then became one.",
-		look = {
-			body = "Round",
-			color = C(120, 230, 255),
-			material = Enum.Material.Glass,
-			extras = { "Sunglasses", "Gem", "Sparkles" },
-		},
 	},
 	{
 		id = "ClownConvict",
@@ -336,7 +276,6 @@ BrainrotData.Brainrots = {
 		rarity = "Epic",
 		income = 250,
 		description = "Escaped in a tiny car with 20 friends.",
-		look = { body = "Round", color = C(255, 255, 255), hat = "Clown", extras = { "ClownNose", "Bowtie" } },
 	},
 	{
 		id = "NinjaNoodle",
@@ -345,7 +284,6 @@ BrainrotData.Brainrots = {
 		rarity = "Epic",
 		income = 300,
 		description = "Slurps right through the prison bars.",
-		look = { body = "Egg", color = C(250, 230, 180), eyes = "Angry", extras = { "NinjaBand", "Noodles" } },
 	},
 	{
 		id = "PirateParrot",
@@ -354,7 +292,6 @@ BrainrotData.Brainrots = {
 		rarity = "Epic",
 		income = 350,
 		description = "Yells 'ESCAPE!' every five seconds.",
-		look = { body = "Round", color = C(235, 60, 60), hat = "Pirate", extras = { "Beak", "Wings", "EyePatch" } },
 	},
 
 	-- LEGENDARY
@@ -365,7 +302,6 @@ BrainrotData.Brainrots = {
 		rarity = "Legendary",
 		income = 1000,
 		description = "Rules the prison yard. Nobody voted.",
-		look = { body = "Egg", color = C(255, 140, 40), eyes = "Angry", hat = "Crown", extras = { "Cape", "Fire" } },
 	},
 	{
 		id = "ElectricInmate",
@@ -374,13 +310,6 @@ BrainrotData.Brainrots = {
 		rarity = "Legendary",
 		income = 1250,
 		description = "Powered by nine volts of pure brainrot.",
-		look = {
-			body = "Round",
-			color = C(255, 240, 80),
-			hat = "Mohawk",
-			accent = C(60, 170, 255),
-			extras = { "Bolts", "Sparkles", "Glow" },
-		},
 	},
 	{
 		id = "GoldenWarden",
@@ -389,13 +318,6 @@ BrainrotData.Brainrots = {
 		rarity = "Legendary",
 		income = 1500,
 		description = "The warden... is ALSO a prisoner??",
-		look = {
-			body = "Egg",
-			color = C(255, 200, 40),
-			material = Enum.Material.Foil,
-			hat = "WardenHat",
-			extras = { "Mustache", "Badge" },
-		},
 	},
 	{
 		id = "DragonDropout",
@@ -404,7 +326,6 @@ BrainrotData.Brainrots = {
 		rarity = "Legendary",
 		income = 2000,
 		description = "Dropped out of dragon school to do crimes.",
-		look = { body = "Wide", color = C(40, 185, 140), eyes = "Angry", extras = { "Horns", "Wings", "Tail", "Fire" } },
 	},
 
 	-- MYTHIC
@@ -415,13 +336,6 @@ BrainrotData.Brainrots = {
 		rarity = "Mythic",
 		income = 5000,
 		description = "Contains an entire galaxy. And snacks.",
-		look = {
-			body = "Round",
-			color = C(90, 50, 170),
-			material = Enum.Material.Neon,
-			eyes = "Big",
-			extras = { "Stars", "Glow", "Sparkles" },
-		},
 	},
 	{
 		id = "SkullBoss",
@@ -430,14 +344,6 @@ BrainrotData.Brainrots = {
 		rarity = "Mythic",
 		income = 7000,
 		description = "The coolest skull in prison. Wears shades at night.",
-		look = {
-			body = "Round",
-			color = C(245, 245, 235),
-			eyes = "Hollow",
-			mouth = "Teeth",
-			hat = "Crown",
-			extras = { "Sunglasses", "GoldChain" },
-		},
 	},
 	{
 		id = "IQInmate",
@@ -446,12 +352,6 @@ BrainrotData.Brainrots = {
 		rarity = "Mythic",
 		income = 9000,
 		description = "Solved the prison. Decided to stay anyway.",
-		look = {
-			body = "Round",
-			color = C(255, 150, 185),
-			hat = "GradCap",
-			extras = { "BrainBumps", "Glasses" },
-		},
 	},
 	{
 		id = "VolcanoVillain",
@@ -460,7 +360,6 @@ BrainrotData.Brainrots = {
 		rarity = "Mythic",
 		income = 11000,
 		description = "Erupts every time he loses at cards.",
-		look = { body = "Tall", color = C(115, 75, 55), eyes = "Angry", extras = { "Lava", "Fire", "Smoke" } },
 	},
 
 	-- DIVINE
@@ -471,13 +370,6 @@ BrainrotData.Brainrots = {
 		rarity = "Divine",
 		income = 40000,
 		description = "Guards the biggest prison in the universe.",
-		look = {
-			body = "Egg",
-			color = C(50, 50, 140),
-			material = Enum.Material.Neon,
-			hat = "WardenHat",
-			extras = { "Stars", "Halo", "Glow", "Sparkles" },
-		},
 	},
 	{
 		id = "RainbowCriminal",
@@ -486,7 +378,6 @@ BrainrotData.Brainrots = {
 		rarity = "Divine",
 		income = 50000,
 		description = "Stole every color. Gave none back.",
-		look = { body = "Round", color = C(255, 255, 255), extras = { "Rainbow", "Sparkles", "Glow" } },
 	},
 	{
 		id = "HaloHooligan",
@@ -495,7 +386,6 @@ BrainrotData.Brainrots = {
 		rarity = "Divine",
 		income = 60000,
 		description = "An angel. Allegedly.",
-		look = { body = "Round", color = C(255, 250, 235), hat = "Halo", extras = { "AngelWings", "Glow", "Sparkles" } },
 	},
 
 	-- SECRET
@@ -506,13 +396,6 @@ BrainrotData.Brainrots = {
 		rarity = "Secret",
 		income = 500000,
 		description = "Nobody knows what it is. Not even it.",
-		look = {
-			body = "Round",
-			color = C(25, 20, 35),
-			eyes = "Glow",
-			mouth = "None",
-			extras = { "RainbowAura", "QuestionMarks", "Glow" },
-		},
 	},
 } :: { Brainrot }
 

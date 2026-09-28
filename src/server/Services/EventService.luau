@@ -65,7 +65,7 @@ local function spawnPrisonKing(): () -> ()
 		body,
 		"👑 THE PRISON KING 👑\nFree 3x lucky roll!",
 		Vector2.new(16, 4),
-		12,
+		BrainrotModel.labelOffset(model, 3),
 		Color3.fromRGB(255, 220, 60)
 	)
 	local prompt = addPrompt(body, "Get a lucky roll!", "👑 Prison King")
@@ -125,7 +125,13 @@ local function spawnEscapees(): () -> ()
 
 		local body = model:FindFirstChild("Body") :: BasePart
 		local root = model.PrimaryPart :: BasePart
-		Build.billboard(body, `💀 ESCAPED!\n{brainrot.name}`, Vector2.new(10, 3), 8, Color3.fromRGB(255, 120, 120))
+		Build.billboard(
+			body,
+			`💀 ESCAPED!\n{brainrot.name}`,
+			Vector2.new(10, 3),
+			BrainrotModel.labelOffset(model, 2.5),
+			Color3.fromRGB(255, 120, 120)
+		)
 		local prompt = addPrompt(body, "Catch!", `Escaped {brainrot.name}`)
 
 		prompt.Triggered:Connect(function(player)

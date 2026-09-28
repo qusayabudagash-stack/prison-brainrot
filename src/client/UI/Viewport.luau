@@ -50,11 +50,13 @@ function Viewport.show(viewport: ViewportFrame, brainrotId: string, variant: str
 	model:PivotTo(CFrame.new())
 	model.Parent = viewport
 
-	local height = BrainrotModel.height(brainrotId)
+	-- Frame the character by whichever is bigger: its height or its width.
+	local bounds = BrainrotModel.bounds(brainrotId)
+	local size = math.max(bounds.Y, bounds.X * 0.95)
 	local camera = viewport:FindFirstChildOfClass("Camera")
 	if camera then
-		local focus = Vector3.new(0, height * 0.45, 0)
-		camera.CFrame = CFrame.lookAt(focus + Vector3.new(0, height * 0.12, -height * 2.35), focus)
+		local focus = Vector3.new(0, bounds.Y * 0.5, 0)
+		camera.CFrame = CFrame.lookAt(focus + Vector3.new(0, size * 0.18, -size * 2.2), focus)
 	end
 	if spinning[viewport] then
 		spinning[viewport] = 0

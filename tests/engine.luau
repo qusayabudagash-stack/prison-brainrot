@@ -101,6 +101,19 @@ function RandomMock:NextInteger(min, max)
 	return math.random(min, max)
 end
 
+-- Lune's CFrame.lookAt faces the opposite way to Roblox's; scripts get this corrected version.
+local function lookAt(at, target, up)
+	up = up or roblox.Vector3.new(0, 1, 0)
+	local look = (target - at).Unit
+	if math.abs(look:Dot(up)) > 0.9999 then
+		up = roblox.Vector3.new(0, 0, 1)
+	end
+	local right = look:Cross(up).Unit
+	local newUp = right:Cross(look).Unit
+	return roblox.CFrame.fromMatrix(at, right, newUp, -look)
+end
+local CFrameFixed = setmetatable({ lookAt = lookAt }, { __index = roblox.CFrame })
+
 local TweenInfoMock = {
 	new = function(time, style, direction, repeatCount, reverses, delayTime)
 		return {
@@ -533,7 +546,7 @@ function Engine:environment(scriptInstance)
 		Instance = roblox.Instance,
 		Vector3 = roblox.Vector3,
 		Vector2 = roblox.Vector2,
-		CFrame = roblox.CFrame,
+		CFrame = CFrameFixed,
 		Color3 = roblox.Color3,
 		UDim = roblox.UDim,
 		UDim2 = roblox.UDim2,
