@@ -274,5 +274,6 @@ T.run(function()
 	end
 	print(`  (built {built} models, biggest has {maxParts} parts)`)
 	check("every Brainrot builds in every variant", #problems == 0, table.concat(problems, "; "))
-	check("models stay simple (< 60 parts)", maxParts < 60, maxParts)
+	-- Rarer Brainrots get more detail and effects, but even the fanciest has to stay cheap to show in every cell.
+	check("models stay within the part budget (< 120 parts)", maxParts < 120, maxParts)
 end)
