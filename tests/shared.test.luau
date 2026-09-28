@@ -5,6 +5,9 @@
 
 local fs = require("@lune/fs")
 local process = require("@lune/process")
+local roblox = require("@lune/roblox")
+
+local Instance, Vector3, CFrame = roblox.Instance, roblox.Vector3, roblox.CFrame
 
 local Engine = require("./engine")
 local T = require("./testing")
@@ -289,4 +292,32 @@ T.run(function()
 	print(`  (built {built} models, biggest has {maxParts} parts)`)
 	check("every Brainrot builds in every variant", #problems == 0, table.concat(problems, "; "))
 	check("models stay within their rarity's part budget", #overBudget == 0, table.concat(overBudget, ", "))
+
+	-- A model dropped into ReplicatedStorage.BrainrotAssets replaces the built-in design
+	local assets = Instance.new("Folder")
+	assets.Name = "BrainrotAssets"
+	local asset = Instance.new("Model")
+	asset.Name = "TimCheese"
+	local mesh = Instance.new("Part")
+	mesh.Name = "Body"
+	mesh.Size = Vector3.new(2, 3, 2)
+	mesh.CFrame = CFrame.new(10, 20, 30)
+	mesh.CanCollide = true
+	mesh.Parent = asset
+	asset.Parent = assets
+	assets.Parent = engine.ReplicatedStorage
+	local custom = BrainrotModel.build("TimCheese")
+	local customBody = custom:FindFirstChild("Body") :: BasePart
+	check(
+		"an asset override replaces the design",
+		customBody ~= nil and customBody.Size == Vector3.new(2, 3, 2) and custom:FindFirstChild("Cheese") == nil
+	)
+	check(
+		"the override stands on the ground, centered, and doesn't collide",
+		customBody ~= nil
+			and math.abs(customBody.CFrame.Position.Y - 1.5) < 0.01
+			and math.abs(customBody.CFrame.Position.X) < 0.01
+			and not customBody.CanCollide
+	)
+	assets:Destroy()
 end)

@@ -158,6 +158,10 @@ The map is built by `MapService` into `Workspace.Lobby`, `Prison`, `CellBlocks`,
   client animates them. `Kit.loft` builds smooth tapered bodies, tails and fins from a list of sections.
   Brainrot ids that were renamed are listed in `BrainrotData.LegacyIds`, and old saves are migrated on
   load.
+- **Swapping in a real 3D model**: put a Model named after the Brainrot's id (e.g. `TralaleroTralala`)
+  in a Folder called `BrainrotAssets` in ReplicatedStorage. It replaces the built-in design everywhere
+  (cells, machines, roll cards); face it towards -Z and name its main part `Body`. Only use models you
+  made or have the rights to use (for example Creator Store assets whose license allows it).
 
 ## Tuning
 

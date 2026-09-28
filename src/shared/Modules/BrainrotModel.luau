@@ -2,6 +2,13 @@
 -- so no uploaded assets are needed. Models face -Z, stand on y = 0 at their pivot, and can be
 -- scaled with the `scale` option. Used by the server for cell displays and events, and by the
 -- client for viewport cards.
+--
+-- Asset override: a Model named after a Brainrot id inside ReplicatedStorage.BrainrotAssets (for
+-- example a MeshPart model you own or got from the Creator Store under a license that allows it) is
+-- used instead of the built-in design. Face it towards -Z; it is centered and set on the ground
+-- automatically, and a part named "Body" (or its PrimaryPart) gets the rarity effects.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BrainrotData = require(script.Parent.BrainrotData)
 local Designs = require(script.Parent.Brainrots.Designs)
@@ -110,7 +117,8 @@ function BrainrotModel.build(brainrotId: string, options: Options?): Model
 	root.PivotOffset = CFrame.new(0, -0.5, 0)
 	model.PrimaryPart = root
 
-	local body = design(kit)
+	local override = BrainrotModel.override(brainrotId)
+	local body = if override then BrainrotModel.useOverride(model, override) else design(kit)
 	body.Name = "Body"
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") and FACE_PARTS[descendant.Name] then
@@ -151,6 +159,62 @@ function BrainrotModel.build(brainrotId: string, options: Options?): Model
 		model:ScaleTo(opts.scale)
 	end
 	return model
+end
+
+-- The replacement model for a Brainrot from ReplicatedStorage.BrainrotAssets, if there is one.
+function BrainrotModel.override(brainrotId: string): Model?
+	local folder = ReplicatedStorage:FindFirstChild("BrainrotAssets")
+	local asset = folder and folder:FindFirstChild(brainrotId)
+	return if asset and asset:IsA("Model") then asset else nil
+end
+
+-- Copies an override model's parts into `model`, standing on y = 0 and centered, and returns its body.
+function BrainrotModel.useOverride(model: Model, asset: Model): BasePart
+	local copy = asset:Clone()
+	-- World-axis bounds of every part, so the asset is centered and grounded whatever its pivot
+	local low, high = Vector3.one * math.huge, -Vector3.one * math.huge
+	local parts: { BasePart } = {}
+	for _, descendant in copy:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			local cframe, half = descendant.CFrame, descendant.Size / 2
+			local reach = Vector3.new(
+				math.abs(cframe.RightVector.X) * half.X
+					+ math.abs(cframe.UpVector.X) * half.Y
+					+ math.abs(cframe.LookVector.X) * half.Z,
+				math.abs(cframe.RightVector.Y) * half.X
+					+ math.abs(cframe.UpVector.Y) * half.Y
+					+ math.abs(cframe.LookVector.Y) * half.Z,
+				math.abs(cframe.RightVector.Z) * half.X
+					+ math.abs(cframe.UpVector.Z) * half.Y
+					+ math.abs(cframe.LookVector.Z) * half.Z
+			)
+			low = low:Min(cframe.Position - reach)
+			high = high:Max(cframe.Position + reach)
+			table.insert(parts, descendant)
+		end
+	end
+	local shift = Vector3.new(-(low.X + high.X) / 2, -low.Y, -(low.Z + high.Z) / 2)
+	for _, part in parts do
+		part.CFrame += shift
+	end
+	local body = copy:FindFirstChild("Body", true) or copy.PrimaryPart
+	for _, child in copy:GetChildren() do
+		child.Parent = model
+	end
+	copy:Destroy()
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.Anchored = true
+			descendant.CanCollide = false
+			descendant.CanTouch = false
+			descendant.CanQuery = false
+			descendant.Massless = true
+			if descendant.Name ~= "Root" then
+				body = body or descendant
+			end
+		end
+	end
+	return body :: BasePart
 end
 
 local boundsCache: { [string]: Vector2 } = {}
