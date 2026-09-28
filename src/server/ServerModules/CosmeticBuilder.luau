@@ -149,7 +149,7 @@ local BUILDERS: { [string]: Builder } = {
 		local at = CFrame.new(7.4, 0, -6.2)
 		s:cyl("Plinth", 1.2, 2.6, at * CFrame.new(0, 0.6, 0), Palette.White, M.Marble)
 		s:cyl("PlinthTop", 0.2, 2.8, at * CFrame.new(0, 1.3, 0), Palette.Gold, M.Foil, false)
-		local statue = BrainrotModel.build(bestBrainrot or "PotatoPrisoner", { variant = "Golden", scale = 0.5 })
+		local statue = BrainrotModel.build(bestBrainrot or "TimCheese", { variant = "Golden", scale = 0.5 })
 		statue.Name = "Statue"
 		statue:PivotTo(s:world(at * CFrame.new(0, 1.4, 0) * CFrame.Angles(0, math.rad(20), 0)))
 		statue.Parent = s.parent

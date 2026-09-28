@@ -188,21 +188,21 @@ T.run(function()
 	check("a card for every Brainrot", cards == BrainrotData.Count, cards)
 	check("collection counter", find(book, `COLLECTION: {Formulas.discoveredCount(data)}/{BrainrotData.Count}`) ~= nil)
 	check("unknown Brainrots show ???", find(book, "???") ~= nil)
-	check("known Brainrots show their name", find(book, "Potato Prisoner") ~= nil)
+	check("known Brainrots show their name", find(book, "Tim Cheese") ~= nil)
 
-	BrainrotService.grant(data, "PotatoPrisoner", "Normal", 3)
+	BrainrotService.grant(data, "TimCheese", "Normal", 3)
 	DataService.changed(alice, "brainrots")
 	task.wait(0.2)
-	local potatoGolden = data.brainrots.PotatoPrisoner.Golden
-	local potatoCard = find(book, "🥔 Potato Prisoner").Parent
-	potatoCard:FindFirstChild("TextButton").Activated:Fire()
-	for _, child in potatoCard:GetChildren() do
+	local cheeseGolden = data.brainrots.TimCheese.Golden
+	local cheeseCard = find(book, "🧀 Tim Cheese").Parent
+	cheeseCard:FindFirstChild("TextButton").Activated:Fire()
+	for _, child in cheeseCard:GetChildren() do
 		if child:IsA("TextButton") and string.find(child.Text, "⭐", 1, true) then
 			child.Activated:Fire()
 		end
 	end
 	task.wait(0.2)
-	check("combine button makes a Golden Potato", data.brainrots.PotatoPrisoner.Golden >= potatoGolden + 1)
+	check("combine button makes a Golden Tim Cheese", data.brainrots.TimCheese.Golden >= cheeseGolden + 1)
 	click(book, "COMBINE ALL")
 	check("combine all button works", true)
 	click(book, "X")

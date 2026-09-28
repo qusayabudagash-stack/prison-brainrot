@@ -7,6 +7,7 @@ local BrainrotData = require(script.Parent.BrainrotData)
 local Designs = require(script.Parent.Brainrots.Designs)
 local Effects = require(script.Parent.Brainrots.Effects)
 local Kit = require(script.Parent.Brainrots.Kit)
+local Parts = require(script.Parent.Brainrots.Parts)
 
 local BrainrotModel = {}
 
@@ -15,6 +16,8 @@ export type Options = {
 	scale: number?,
 	-- Weld every part to an anchored root so the whole model can be moved by moving the root.
 	welded: boolean?,
+	-- Put a crown on its head (the event King).
+	crowned: boolean?,
 }
 
 local GOLD = Color3.fromRGB(255, 200, 50)
@@ -113,6 +116,15 @@ function BrainrotModel.build(brainrotId: string, options: Options?): Model
 		if descendant:IsA("BasePart") and FACE_PARTS[descendant.Name] then
 			descendant:SetAttribute("KeepColor", true)
 		end
+	end
+	if opts.crowned then
+		-- Designs can mark where their head's crown goes; otherwise it sits on the highest point
+		local headTop = model:GetAttribute("HeadTop")
+		local headWidth = model:GetAttribute("HeadWidth")
+		local _, measuredTop = measure(model)
+		local at = if typeof(headTop) == "Vector3" then headTop else Vector3.new(0, measuredTop - 0.2, 0)
+		local width = if type(headWidth) == "number" then headWidth else 1.4
+		Parts.crown(kit, CFrame.new(at), width, nil, "Body")
 	end
 	local halfWidth, top = measure(model)
 	model:SetAttribute("BrainrotId", brainrotId)

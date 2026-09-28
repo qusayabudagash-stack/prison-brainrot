@@ -7,7 +7,7 @@ GameConfig.TAGLINE = "ROLL FOR BRAINROTS, MAKE MONEY, AND UNLOCK THE PRISON!"
 
 -- New players
 GameConfig.STARTING_COINS = 100
-GameConfig.STARTER_BRAINROT = "PotatoPrisoner"
+GameConfig.STARTER_BRAINROT = "TimCheese"
 
 -- Income: only your best Brainrots (up to your capacity) earn coins.
 GameConfig.BASE_CAPACITY = 8

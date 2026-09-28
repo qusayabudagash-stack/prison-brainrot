@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local AreaData = require(ReplicatedStorage.Modules.AreaData)
+local BrainrotData = require(ReplicatedStorage.Modules.BrainrotData)
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 local Signal = require(ReplicatedStorage.Modules.Signal)
 local Types = require(ReplicatedStorage.Modules.Types)
@@ -91,6 +92,34 @@ local function reconcile(saved: any): PlayerData
 				end
 			end
 		end
+	end
+	-- Brainrots that were renamed in an update keep their counts and discoveries under the new id
+	for oldId, newId in BrainrotData.LegacyIds do
+		local counts = data.brainrots[oldId]
+		if counts then
+			local merged = data.brainrots[newId] or { Normal = 0, Golden = 0, Diamond = 0 }
+			for variant, amount in counts do
+				merged[variant] = (merged[variant] or 0) + amount
+			end
+			data.brainrots[newId] = merged
+			data.brainrots[oldId] = nil
+		end
+		if data.discovered[oldId] then
+			data.discovered[newId] = true
+			data.discovered[oldId] = nil
+		end
+		local found = data.variantsFound[oldId]
+		if type(found) == "table" then
+			local merged = data.variantsFound[newId]
+			if type(merged) ~= "table" then
+				merged = {}
+				data.variantsFound[newId] = merged
+			end
+			for variant, value in found do
+				merged[variant] = merged[variant] or value
+			end
+		end
+		data.variantsFound[oldId] = nil
 	end
 	data.unlockedAreas[AreaData.FirstAreaId] = true
 	return data :: PlayerData

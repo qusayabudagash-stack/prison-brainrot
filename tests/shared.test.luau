@@ -76,8 +76,8 @@ T.run(function()
 		incomeOrdered = incomeOrdered and highMin > lowMax
 	end
 	check("every rarity earns more than the one below", incomeOrdered)
-	check("Potato Prisoner earns $5/sec", BrainrotData.ById.PotatoPrisoner.income == 5)
-	check("Prison King earns $1,000/sec", BrainrotData.ById.PrisonKing.income == 1000)
+	check("Tim Cheese earns $5/sec", BrainrotData.ById.TimCheese.income == 5)
+	check("Ballerina Cappuccina earns $1,000/sec", BrainrotData.ById.BallerinaCappuccina.income == 1000)
 
 	---------------------------------------------------------------------------
 	section("Odds, luck and pity")
@@ -199,8 +199,8 @@ T.run(function()
 	---------------------------------------------------------------------------
 	local data = {
 		brainrots = {
-			PotatoPrisoner = { Normal = 20, Golden = 1, Diamond = 0 },
-			PrisonKing = { Normal = 1, Golden = 0, Diamond = 0 },
+			TimCheese = { Normal = 20, Golden = 1, Diamond = 0 },
+			BallerinaCappuccina = { Normal = 1, Golden = 0, Diamond = 0 },
 		},
 		upgrades = { Income = 0, Luck = 0, Discount = 0, Capacity = 0, Speed = 0 },
 		discovered = {},
@@ -212,7 +212,7 @@ T.run(function()
 	}
 	check("capacity starts at 8", Formulas.capacity(data) == 8)
 	check(
-		"only the best 8 earn: King + Golden Potato + 6 Potatoes",
+		"only the best 8 earn: Ballerina + Golden Tim Cheese + 6 Tim Cheeses",
 		Formulas.baseIncome(data) == 1000 + 10 + 6 * 5,
 		Formulas.baseIncome(data)
 	)

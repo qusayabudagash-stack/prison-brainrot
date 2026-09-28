@@ -274,7 +274,7 @@ local function intake(s: Shapes.Shapes)
 		"BEST ROLLERS OF 1987",
 		{ textColor = Palette.Ink, strokeColor = Palette.Gold, pixelsPerStud = 40 }
 	)
-	local statue = BrainrotModel.build("PotatoPrisoner", { variant = "Golden", scale = 1.1 })
+	local statue = BrainrotModel.build("TralaleroTralala", { variant = "Golden", scale = 1.1 })
 	statue.Name = "FounderStatue"
 	statue:PivotTo(s:world(plinth * CFrame.new(0, 3.5, 0)))
 	statue.Parent = folder

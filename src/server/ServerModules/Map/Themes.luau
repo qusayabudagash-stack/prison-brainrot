@@ -18,7 +18,12 @@ export type Theme = {
 
 local Themes: { [string]: Theme } = {
 	CellBlock1 = {
-		machine = { body = rgb(236, 96, 44), trim = Palette.Chrome, glow = rgb(255, 196, 70), featured = "PrisonKing" },
+		machine = {
+			body = rgb(236, 96, 44),
+			trim = Palette.Chrome,
+			glow = rgb(255, 196, 70),
+			featured = "TungTungTungSahur",
+		},
 		wall = Palette.Concrete,
 		paint = Palette.Paint,
 		floor = Palette.FloorLight,
@@ -31,7 +36,7 @@ local Themes: { [string]: Theme } = {
 			body = rgb(48, 112, 222),
 			trim = Palette.Chrome,
 			glow = rgb(90, 214, 255),
-			featured = "ElectricInmate",
+			featured = "BallerinaCappuccina",
 		},
 		wall = rgb(206, 208, 206),
 		paint = rgb(74, 104, 150),
@@ -41,7 +46,12 @@ local Themes: { [string]: Theme } = {
 		accent = rgb(60, 130, 235),
 	},
 	MaxSecurity = {
-		machine = { body = rgb(36, 36, 42), trim = Palette.Hazard, glow = rgb(255, 64, 52), featured = "GoldenWarden" },
+		machine = {
+			body = rgb(36, 36, 42),
+			trim = Palette.Hazard,
+			glow = rgb(255, 64, 52),
+			featured = "BombombiniGusini",
+		},
 		wall = rgb(150, 152, 156),
 		paint = rgb(62, 64, 70),
 		floor = rgb(96, 98, 104),
@@ -54,7 +64,7 @@ local Themes: { [string]: Theme } = {
 			body = rgb(104, 58, 166),
 			trim = rgb(170, 176, 186),
 			glow = rgb(130, 255, 110),
-			featured = "SkullBoss",
+			featured = "BombardiroCrocodilo",
 		},
 		wall = rgb(126, 120, 132),
 		paint = rgb(66, 54, 84),
@@ -68,7 +78,7 @@ local Themes: { [string]: Theme } = {
 			body = rgb(196, 204, 214),
 			trim = Palette.Chrome,
 			glow = rgb(255, 90, 230),
-			featured = "CosmicPrisoner",
+			featured = "TralaleroTralala",
 		},
 		wall = rgb(150, 170, 172),
 		paint = rgb(54, 92, 96),
@@ -82,7 +92,7 @@ local Themes: { [string]: Theme } = {
 			body = rgb(58, 30, 118),
 			trim = Palette.Gold,
 			glow = rgb(255, 130, 255),
-			featured = "RainbowCriminal",
+			featured = "DragonCannelloni",
 		},
 		wall = rgb(44, 36, 72),
 		paint = rgb(28, 22, 50),
