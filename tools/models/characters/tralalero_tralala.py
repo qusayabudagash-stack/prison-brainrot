@@ -21,7 +21,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import sdf  # noqa: E402
-from sdf import Blade, Loft, capsule_chain, carve, ellipsoid, normalize, round_cone, smax, smin, smoothstep, sphere  # noqa: E402
+from sdf import Blade, Loft, capsule_chain, carve, ellipsoid, normalize, rounded_box, smax, smin, smoothstep, sphere, superellipsoid  # noqa: E402
 
 ID = "TralaleroTralala"
 
@@ -53,13 +53,13 @@ def sway(y):
     return np.interp(y, SWAY[:, 0], SWAY[:, 1])
 
 
-LOFT = Loft([(y, (top + bottom) / 2, hw, (top - bottom) / 2, sway(y)) for y, top, bottom, hw in PROFILE], exponent=3.0)
+LOFT = Loft([(y, (top + bottom) / 2, hw, (top - bottom) / 2, sway(y)) for y, top, bottom, hw in PROFILE], exponent=5.0)
 FACE_PLANE = -2.64
 
 
 def BODY(p):  # noqa: N802 - reads like the shape it is
     """The lofted body with its snout sliced into a broad, rounded, flat face."""
-    return smax(LOFT(p), -(p[..., 1] - FACE_PLANE), 0.17)
+    return smax(LOFT(p), -(p[..., 1] - FACE_PLANE), 0.1)
 
 
 def spine(y):
@@ -72,15 +72,15 @@ def spine(y):
 # Fins: broad, thick, simple shapes with rounded edges
 # ---------------------------------------------------------------------------------------------
 
-FIN = {"depth": 0.3, "round_": 0.045, "smooth": 8}
+FIN = {"depth": 0.3, "round_": 0.04, "smooth": 0}
 
 DORSAL = Blade(
     origin=(0, -0.55, 4.3),
     u_axis=(0, 1, 0),
     v_axis=(0, 0, 1),
-    outline=[(-0.95, -0.35), (-0.58, 0.52), (0.0, 1.38), (0.6, 1.86), (0.9, 1.86), (0.76, 1.26), (0.7, 0.56), (1.0, -0.35)],
-    thickness=0.19,
-    edge=0.17,
+    outline=[(-1.0, -0.35), (-0.62, 0.5), (-0.1, 1.3), (0.5, 1.84), (0.86, 1.9), (0.8, 1.3), (0.74, 0.6), (1.02, -0.35)],
+    thickness=0.2,
+    edge=0.2,
     **FIN,
 )
 
@@ -90,20 +90,20 @@ TAIL = Blade(
     v_axis=(0, 0, 1),
     outline=[
         (-0.4, 0.34),
-        (0.18, 1.08),
-        (0.72, 1.72),
-        (1.1, 1.9),
-        (1.06, 1.36),
-        (0.76, 0.48),
-        (0.68, 0.02),
-        (0.82, -0.56),
-        (1.04, -1.12),
-        (0.66, -1.1),
+        (0.2, 1.1),
+        (0.76, 1.78),
+        (1.12, 1.94),
+        (1.02, 1.3),
+        (0.74, 0.46),
+        (0.66, 0.02),
+        (0.8, -0.56),
+        (1.06, -1.14),
+        (0.64, -1.08),
         (0.12, -0.46),
         (-0.4, -0.3),
     ],
-    thickness=0.17,
-    edge=0.15,
+    thickness=0.18,
+    edge=0.18,
     **FIN,
 )
 
@@ -111,12 +111,11 @@ TAIL = Blade(
 def pectoral(side):
     return Blade(
         origin=(side * 1.25, -1.0, 2.62),
-        u_axis=(side * 1.0, 0.35, -0.5),
-        v_axis=(0, 1, 0.1),
-        outline=[(-0.35, -0.55), (0.6, -0.55), (1.45, -0.15), (1.92, 0.34), (1.76, 0.78), (0.9, 0.78), (-0.35, 0.72)],
-        thickness=0.16,
-        edge=0.14,
-        bend=0.1 * side,
+        u_axis=(side * 1.0, 0.35, -0.32),
+        v_axis=(0, 1, 0.05),
+        outline=[(-0.35, -0.55), (0.6, -0.55), (1.45, -0.18), (1.95, 0.32), (1.8, 0.8), (0.9, 0.8), (-0.35, 0.72)],
+        thickness=0.17,
+        edge=0.17,
         **FIN,
     )
 
@@ -259,8 +258,13 @@ for leg in LEGS:
 
 
 def leg_fn(leg):
+    """A chunky square leg with rounded edges, from inside the belly down into the shoe."""
+    hip, ankle = leg["hip"], leg["ankle"]
+    centre = (hip + ankle) / 2
+    half = (0.37, 0.37, (hip[2] - ankle[2]) / 2 + 0.1)
+
     def fn(p):
-        return round_cone(p, leg["hip"], leg["ankle"], 0.42, 0.33)
+        return rounded_box(p, centre, half, 0.11)
 
     return fn
 
@@ -294,22 +298,22 @@ _legs = sdf.bounded(legs, (-1.5, -1.6, 0.4), (1.5, 1.4, 3.3))
 def shark(p):
     """The shark without legs: body, fins and face."""
     d = BODY(p)
-    d = smin(d, _dorsal(p), 0.2)
-    d = smin(d, _tail(p), 0.16)
+    d = smin(d, _dorsal(p), 0.07)
+    d = smin(d, _tail(p), 0.06)
     for f in _pects:
-        d = smin(d, f(p), 0.18)
+        d = smin(d, f(p), 0.06)
     for f in _sockets:
-        d = smin(d, f(p), 0.12)
+        d = smin(d, f(p), 0.05)
     for e in EYES:
         d = carve(d, sphere(p, e["center"], EYE_RADIUS + 0.015), 0.02)
-    d = smin(d, _brows(p), 0.06)
+    d = smin(d, _brows(p), 0.02)
     d = carve(d, _mouth(p), 0.05)
     d = carve(d, _gills(p), 0.03)
     return d
 
 
 def body(p):
-    return smin(shark(p), _legs(p), 0.22)
+    return smin(shark(p), _legs(p), 0.07)
 
 
 BODY_BOX = ((-3.5, -3.0, 0.5), (3.5, 3.1, 6.35))
@@ -395,9 +399,9 @@ def sock_fn(leg_index):
 
     def sock(p):
         d = fn(p) - 0.04
-        d = smax(d, p[..., 2] - SOCK_TOP, 0.03)
-        cuff = smax(np.abs(p[..., 2] - (SOCK_TOP - 0.06)) - 0.08, fn(p) - 0.09, 0.05)
-        return smin(d, cuff, 0.03)
+        d = smax(d, p[..., 2] - SOCK_TOP, 0.02)
+        cuff = smax(np.abs(p[..., 2] - (SOCK_TOP - 0.07)) - 0.08, fn(p) - 0.085, 0.02)
+        return np.minimum(d, cuff)
 
     return sock
 
@@ -475,10 +479,10 @@ class Shoe:
     def upper_local(self, p):
         u, v, z = self.local(p)
         q = np.stack([u, v, z], axis=-1)
-        toe = ellipsoid(q, (0.86, 0.0, 0.3), (0.34, 0.31, 0.23))
-        vamp = ellipsoid(q, (0.5, 0.0, 0.38), (0.46, 0.3, 0.33))
-        heel = ellipsoid(q, (0.1, 0.0, 0.44), (0.35, 0.28, 0.38))
-        d = smin(smin(toe, vamp, 0.24), heel, 0.24)
+        toe = superellipsoid(q, (0.86, 0.0, 0.3), (0.34, 0.31, 0.22), 3.5)
+        vamp = superellipsoid(q, (0.52, 0.0, 0.38), (0.46, 0.3, 0.32), 3.5)
+        heel = superellipsoid(q, (0.1, 0.0, 0.44), (0.36, 0.29, 0.38), 3.5)
+        d = smin(smin(toe, vamp, 0.12), heel, 0.12)
         d2 = sdf.polygon2d(u, v, self.outline)
         d = smax(d, d2 + 0.04, 0.08)
         d = smax(d, SOLE_TOP - 0.04 + self.toe_spring(u) - z, 0.03)

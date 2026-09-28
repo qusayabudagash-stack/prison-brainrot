@@ -14,12 +14,16 @@ tools/models/setup.sh                      # venv with bpy 4.5, numpy, scipy, sc
 - `sdf.py`: distance-field shapes (`Loft` bodies with round or rounded-box sections, `Blade` fins,
   capsules, ellipsoids), smooth union/carve, narrow-band meshing, surface projection and baked
   occlusion.
-- `scene.py`: Blender helpers: meshes from arrays with per-vertex paint, materials, studio, camera.
+- `scene.py`: Blender helpers: meshes from arrays with per-vertex paint, materials, studio, camera,
+  and the stud surface (`add_studs`): a grid of small raised rounded-square studs projected along
+  each face's dominant axis, faded on bevels and scaled per vertex by the `Studs` paint attribute.
+  In Roblox this becomes a normal map, not geometry.
 - `build.py`: meshes a character's parts (cached in `.cache/`), paints them and renders the views
   (`threequarter`, `front`, `side`, `back`, `thumbnail`, `face`, `shoes`, `scale` next to a
-  5-stud blocky avatar, `gameplay` from a Roblox camera distance on a grass baseplate, and
-  `silhouette` / `silhouette_side` as flat black shapes). `--game` renders the in-game meshes,
-  each part cut to its triangle budget; `--skip Teeth,Tongue` leaves parts out while debugging.
+  5-stud blocky avatar, `gameplay` from a Roblox camera distance on a studded baseplate,
+  `surface` for a close-up of the stud surface, and `silhouette` / `silhouette_side` as flat black
+  shapes). `--game` renders the in-game meshes, each part cut to its triangle budget;
+  `--skip Teeth,Tongue` leaves parts out while debugging.
 - `characters/<name>.py`: the character's geometry; `characters/<name>_look.py`: its paint and
   surface properties (kept apart so recoloring does not re-sculpt).
 

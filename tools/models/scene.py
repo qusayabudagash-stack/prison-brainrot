@@ -155,6 +155,149 @@ def material(name, color=None, roughness=0.5, coat=0.0, coat_roughness=0.08, sub
     return mat
 
 
+def _stud_group(size=0.34, radius=0.12, bevel=0.07):
+    """Node group: height (0 in the grooves, 1 on top) of a grid of rounded-square studs.
+
+    Input is a 2D coordinate in stud cells (x, y; z ignored). Each cell holds one raised rounded
+    square of half-size `size` with corner `radius` and a soft `bevel`, all in cell units.
+    """
+    name = f"StudHeight_{size}_{radius}_{bevel}"
+    group = bpy.data.node_groups.get(name)
+    if group:
+        return group
+    group = bpy.data.node_groups.new(name, "ShaderNodeTree")
+    group.interface.new_socket("Coord", in_out="INPUT", socket_type="NodeSocketVector")
+    group.interface.new_socket("Height", in_out="OUTPUT", socket_type="NodeSocketFloat")
+    nodes, links = group.nodes, group.links
+    gin = nodes.new("NodeGroupInput")
+    gout = nodes.new("NodeGroupOutput")
+
+    def vmath(op, a, b=None):
+        node = nodes.new("ShaderNodeVectorMath")
+        node.operation = op
+        links.new(a, node.inputs[0])
+        if b is not None:
+            if isinstance(b, tuple):
+                node.inputs[1].default_value = b
+            else:
+                links.new(b, node.inputs[1])
+        return node.outputs[1] if op in ("LENGTH", "DOT_PRODUCT", "DISTANCE") else node.outputs[0]
+
+    def math(op, a, b):
+        node = nodes.new("ShaderNodeMath")
+        node.operation = op
+        for i, v in enumerate((a, b)):
+            if isinstance(v, float):
+                node.inputs[i].default_value = v
+            else:
+                links.new(v, node.inputs[i])
+        return node.outputs[0]
+
+    flat = vmath("MULTIPLY", gin.outputs["Coord"], (1.0, 1.0, 0.0))
+    cell = vmath("SUBTRACT", vmath("FRACTION", flat), (0.5, 0.5, 0.0))
+    a = vmath("SUBTRACT", vmath("ABSOLUTE", cell), (size - radius, size - radius, 0.0))
+    outside = vmath("LENGTH", vmath("MAXIMUM", a, (0.0, 0.0, 0.0)))
+    sep = nodes.new("ShaderNodeSeparateXYZ")
+    links.new(a, sep.inputs[0])
+    inside = math("MINIMUM", math("MAXIMUM", sep.outputs["X"], sep.outputs["Y"]), 0.0)
+    dist = math("SUBTRACT", math("ADD", outside, inside), radius)
+    ramp = nodes.new("ShaderNodeMapRange")
+    ramp.interpolation_type = "SMOOTHSTEP"
+    ramp.inputs["From Min"].default_value = bevel * 0.5
+    ramp.inputs["From Max"].default_value = -bevel * 0.5
+    links.new(dist, ramp.inputs["Value"])
+    links.new(ramp.outputs["Result"], gout.inputs["Height"])
+    return group
+
+
+def add_studs(mat, pitch=0.11, strength=0.9, distance=0.016, groove=0.16, attribute="Studs"):
+    """Cover a Principled material with a dense grid of small raised rounded-square studs.
+
+    The grid is projected along each point's dominant axis (object space), so studs sit square on
+    the flat panels of blocky shapes and stay aligned from part to part, like a Roblox surface. It
+    fades out on bevels (where no axis dominates) and wherever the per-vertex `attribute` is 0.
+    Grooves are darkened a little so the pattern reads in flat lighting too.
+    """
+    nodes, links = mat.node_tree.nodes, mat.node_tree.links
+    bsdf = nodes["Principled BSDF"]
+    coords = nodes.new("ShaderNodeTexCoord")
+    scaled = nodes.new("ShaderNodeVectorMath")
+    scaled.operation = "SCALE"
+    scaled.inputs["Scale"].default_value = 1.0 / pitch
+    links.new(coords.outputs["Object"], scaled.inputs[0])
+    sp = nodes.new("ShaderNodeSeparateXYZ")
+    links.new(scaled.outputs[0], sp.inputs[0])
+    group = _stud_group()
+
+    def height(u, v):
+        comb = nodes.new("ShaderNodeCombineXYZ")
+        links.new(u, comb.inputs["X"])
+        links.new(v, comb.inputs["Y"])
+        node = nodes.new("ShaderNodeGroup")
+        node.node_tree = group
+        links.new(comb.outputs[0], node.inputs["Coord"])
+        return node.outputs["Height"]
+
+    def math(op, a, b, clamp=False):
+        node = nodes.new("ShaderNodeMath")
+        node.operation = op
+        node.use_clamp = clamp
+        for i, v in enumerate((a, b)):
+            if isinstance(v, float):
+                node.inputs[i].default_value = v
+            else:
+                links.new(v, node.inputs[i])
+        return node.outputs[0]
+
+    hx = height(sp.outputs["Y"], sp.outputs["Z"])
+    hy = height(sp.outputs["X"], sp.outputs["Z"])
+    hz = height(sp.outputs["X"], sp.outputs["Y"])
+    nabs = nodes.new("ShaderNodeVectorMath")
+    nabs.operation = "ABSOLUTE"
+    links.new(coords.outputs["Normal"], nabs.inputs[0])
+    sn = nodes.new("ShaderNodeSeparateXYZ")
+    links.new(nabs.outputs[0], sn.inputs[0])
+    ax, ay, az = sn.outputs["X"], sn.outputs["Y"], sn.outputs["Z"]
+    wx = math("MULTIPLY", math("GREATER_THAN", ax, ay), math("GREATER_THAN", ax, az))
+    wy = math("MULTIPLY", math("SUBTRACT", 1.0, math("GREATER_THAN", ax, ay)), math("GREATER_THAN", ay, az))
+    wz = math("SUBTRACT", math("SUBTRACT", 1.0, wx), wy, clamp=True)
+    h = math("ADD", math("ADD", math("MULTIPLY", hx, wx), math("MULTIPLY", hy, wy)), math("MULTIPLY", hz, wz))
+    # only on faces that clearly face one axis, and only where the paint asks for studs
+    dominant = math("MAXIMUM", math("MAXIMUM", ax, ay), az)
+    fade = nodes.new("ShaderNodeMapRange")
+    fade.inputs["From Min"].default_value = 0.74
+    fade.inputs["From Max"].default_value = 0.82
+    links.new(dominant, fade.inputs["Value"])
+    if attribute:
+        attr = nodes.new("ShaderNodeAttribute")
+        attr.attribute_name = attribute
+        mask = math("MULTIPLY", fade.outputs["Result"], attr.outputs["Fac"])
+    else:
+        mask = fade.outputs["Result"]
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Distance"].default_value = distance
+    links.new(math("MULTIPLY", mask, strength), bump.inputs["Strength"])
+    links.new(h, bump.inputs["Height"])
+    links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    # darken grooves: colour * (1 - groove * mask * (1 - h))
+    shade = math("SUBTRACT", 1.0, math("MULTIPLY", math("MULTIPLY", mask, groove), math("SUBTRACT", 1.0, h)))
+    base_link = bsdf.inputs["Base Color"].links[0] if bsdf.inputs["Base Color"].links else None
+    mul = nodes.new("ShaderNodeMix")
+    mul.data_type = "RGBA"
+    mul.blend_type = "MULTIPLY"
+    mul.inputs["Factor"].default_value = 1.0
+    if base_link:
+        links.new(base_link.from_socket, mul.inputs[6])
+    else:
+        mul.inputs[6].default_value = bsdf.inputs["Base Color"].default_value
+    comb = nodes.new("ShaderNodeCombineXYZ")
+    for key in ("X", "Y", "Z"):
+        links.new(shade, comb.inputs[key])
+    links.new(comb.outputs[0], mul.inputs[7])
+    links.new(mul.outputs[2], bsdf.inputs["Base Color"])
+    return mat
+
+
 def eye_material(name, iris="#3a2a1c", iris_edge="#140c07", pupil_size=0.42, iris_size=0.72, highlight=False):
     """A glossy eyeball whose pupil (and optional iris) faces the object's local +Z axis.
 
@@ -253,8 +396,8 @@ def cyclorama(color="#e8dfd3", radius=7.0, depth=14.0, width=80.0, height=40.0, 
     return mesh_object(name, np.array(verts), np.array(faces)[:, ::-1], material=mat)
 
 
-def game_environment(ground="#7cc05a", ground_alt="#74b653", sky="#a8d8ff", sun_azimuth=-40.0):
-    """A simple Roblox-like place: a big grass baseplate with 4-stud tiles, sky and a sun."""
+def game_environment(ground="#a3a5ab", ground_alt="#9a9ca2", sky="#6fbaff", sun_azimuth=-40.0):
+    """A simple Roblox-like place: a big studded grey baseplate with 4-stud tiles, sky and a sun."""
     half = 150.0
     verts = np.array([(-half, -half, 0), (half, -half, 0), (half, half, 0), (-half, half, 0)])
     mat = bpy.data.materials.new("Ground")
@@ -269,6 +412,7 @@ def game_environment(ground="#7cc05a", ground_alt="#74b653", sky="#a8d8ff", sun_
     coords = nodes.new("ShaderNodeTexCoord")
     mat.node_tree.links.new(coords.outputs["UV"], checker.inputs["Vector"])
     mat.node_tree.links.new(checker.outputs["Color"], bsdf.inputs["Base Color"])
+    add_studs(mat, pitch=1.0, strength=0.6, distance=0.05, groove=0.12, attribute=None)
     obj = mesh_object("Ground", verts, np.array([(0, 1, 2), (0, 2, 3)]), material=mat)
     uv = obj.data.uv_layers.new(name="UV")
     corners = {0: (0, 0), 1: (1, 0), 2: (1, 1), 3: (0, 1)}

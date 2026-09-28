@@ -69,6 +69,19 @@ def ellipsoid(p, c, r, rotation=None):
     return k0 * (k0 - 1.0) / np.maximum(k1, 1e-9)
 
 
+def superellipsoid(p, c, r, n=4.0):
+    """A boxy ellipsoid: exponent 2 is an ellipsoid, higher values square it off (approximate)."""
+    q = np.abs(p - np.asarray(c)) / np.asarray(r, dtype=np.float64)
+    k0 = np.sum(q**n, axis=-1) ** (1.0 / n)
+    return (k0 - 1.0) * float(np.min(r))
+
+
+def rounded_box(p, c, half, radius):
+    """An axis-aligned box with rounded edges (exact)."""
+    q = np.abs(p - np.asarray(c)) - (np.asarray(half, dtype=np.float64) - radius)
+    return length(np.maximum(q, 0.0)) + np.minimum(np.max(q, axis=-1), 0.0) - radius
+
+
 def round_cone(p, a, b, r1, r2):
     """A capsule whose radius goes from r1 at a to r2 at b (exact, Inigo Quilez)."""
     a = np.asarray(a, dtype=np.float64)

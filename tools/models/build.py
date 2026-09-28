@@ -36,6 +36,8 @@ VIEWS = {
     "thumbnail": {"azimuth": 30, "elevation": 12, "size": (1024, 1024), "lens": 85, "fill": 0.93},
     "face": {"azimuth": 28, "elevation": 8, "size": (1200, 900), "lens": 85, "fill": 0.9, "focus": ((-1.9, -3.2, 2.0), (1.9, -1.2, 5.3))},
     "shoes": {"azimuth": 30, "elevation": 14, "size": (1200, 900), "lens": 85, "fill": 0.9, "focus": ((-1.6, -2.4, -0.1), (1.6, 1.4, 1.2))},
+    # the stud surface up close: flank, gills, pectoral fin root and dorsal base
+    "surface": {"azimuth": 62, "elevation": 14, "size": (1400, 1000), "lens": 100, "fill": 0.95, "focus": ((0.2, -1.9, 2.3), (1.9, 0.3, 4.9))},
     "scale": {"azimuth": 24, "elevation": 6, "size": (1600, 1000), "lens": 100, "fill": 0.86, "avatar": True},
     # a Roblox gameplay camera: 70 degree vertical field of view, ~24 studs away, looking down a little
     "gameplay": {"azimuth": 28, "elevation": 16, "size": (1280, 720), "fov": 70, "distance": 20, "avatar": True, "game": True},
@@ -70,12 +72,13 @@ def build_part(part, geometry_hash, quality, force=False):
 
 
 def surface_material():
-    return scene.material(
+    mat = scene.material(
         "Surface",
         vertex_color=True,
         attributes=("Roughness", "Coat Weight", "Subsurface Weight", "Sheen Weight"),
         coat_roughness=0.12,
     )
+    return scene.add_studs(mat)
 
 
 def uv_sphere(radius, segments=96, rings=48):
@@ -282,6 +285,8 @@ def main():
             radius = 6.0
         if view.get("game"):
             scene.game_environment(sun_azimuth=view["azimuth"] - 35)
+            bpy_world = scene.bpy.context.scene.world
+            bpy_world.node_tree.nodes["Background"].inputs["Strength"].default_value = 1.4
         else:
             studio(view["azimuth"], target, radius)
         w, h = view["size"]

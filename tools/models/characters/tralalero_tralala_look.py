@@ -34,13 +34,15 @@ PAL = {
 }
 
 
-def surface(n, rough, coat=0.0, sheen=0.0):
+def surface(n, rough, coat=0.0, sheen=0.0, studs=0.0):
+    """Per-vertex surface properties; `studs` is how strongly the raised stud surface shows."""
     ones = np.ones(n)
     return {
         "Roughness": ones * rough,
         "CoatWeight": ones * coat,
         "SubsurfaceWeight": ones * 0.0,
         "SheenWeight": ones * sheen,
+        "Studs": ones * studs,
     }
 
 
@@ -76,19 +78,23 @@ def paint_body(v, n):
     on_fin = smoothstep(0.06, 0.0, fin) * smoothstep(0.0, 0.12, g.BODY(v))
     belly = belly * (1 - on_fin)
     col = mix(col, PAL["belly"], belly)
-    attrs = surface(count, 0.42, coat=0.12)
+    attrs = surface(count, 0.34, coat=0.05, studs=1.0)
 
-    col = mix(col, PAL["brow"], smoothstep(0.04, 0.0, g._brows(v)))
-    col = mix(col, PAL["gill"], smoothstep(0.025, 0.0, g._gills(v)))
+    brow = smoothstep(0.04, 0.0, g._brows(v))
+    col = mix(col, PAL["brow"], brow)
+    blend(attrs, surface(count, 0.45, studs=0.6), brow)
+    gill = smoothstep(0.03, 0.0, g._gills(v))
+    col = mix(col, PAL["gill"], gill)
+    blend(attrs, surface(count, 0.45), gill)
 
     mouth = smoothstep(0.035, 0.005, g._mouth(v))
     depth = smoothstep(0.02, 0.1, -g.BODY(v))
     col = mix(col, mix(PAL["gum"], PAL["mouth"], depth), mouth)
-    blend(attrs, surface(count, 0.35, coat=0.2), mouth)
+    blend(attrs, surface(count, 0.35, coat=0.1), mouth)
 
     skin = smoothstep(0.03, -0.03, g._legs(v) - g.shark(v))
     col = mix(col, PAL["skin"], skin)
-    blend(attrs, surface(count, 0.55), skin)
+    blend(attrs, surface(count, 0.5, studs=0.7), skin)
     return col, attrs
 
 
@@ -113,7 +119,7 @@ def paint_shoe(i):
         count = len(v)
         u, vv, z = shoe.local(v)
         col = np.tile(PAL["shoe"], (count, 1))
-        attrs = surface(count, 0.45, coat=0.15)
+        attrs = surface(count, 0.36, coat=0.05, studs=1.0)
 
         # white toe cap, navy heel tab and padded collar
         col = mix(col, PAL["white"], smoothstep(-0.01, 0.01, u - shoe.toe_cap_line(vv, z)))
@@ -129,7 +135,7 @@ def paint_shoe(i):
         sole_col = mix(PAL["white"], PAL["outsole"], outsole)
         sole_col = mix(sole_col, PAL["shoe"], smoothstep(0.022, 0.014, np.abs(zz - 0.165)) * (1 - outsole))
         col = mix(col, sole_col, sole)
-        blend(attrs, surface(count, 0.55), sole)
+        blend(attrs, surface(count, 0.5, studs=0.3), sole)
 
         lace = smoothstep(0.012, 0.0, shoe.lace_fn(v))
         col = mix(col, PAL["white"], lace)
