@@ -11,6 +11,7 @@ sourcemap.json
 # Editor and OS clutter
 .DS_Store
 Thumbs.db
+rojo.exe
 
 # Blender model pipeline mesh cache
 tools/models/.cache/
