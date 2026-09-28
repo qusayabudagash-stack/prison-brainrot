@@ -16,6 +16,8 @@ local engine = Engine.new(fs.readFile(process.args[1] or "build/test.rbxl"))
 local Modules = engine.ReplicatedStorage.Modules
 local AreaData = engine:require(Modules.AreaData)
 local BrainrotData = engine:require(Modules.BrainrotData)
+local BrainrotAssetIds = engine:require(Modules.BrainrotAssetIds)
+local BrainrotAssets = engine:require(Modules.BrainrotAssets)
 local BrainrotModel = engine:require(Modules.BrainrotModel)
 local Format = engine:require(Modules.Format)
 local Formulas = engine:require(Modules.Formulas)
@@ -308,16 +310,84 @@ T.run(function()
 	assets.Parent = engine.ReplicatedStorage
 	local custom = BrainrotModel.build("TimCheese")
 	local customBody = custom:FindFirstChild("Body") :: BasePart
+	local designHeight = BrainrotModel.designHeight("TimCheese")
+	check("an asset override replaces the design", customBody ~= nil and custom:FindFirstChild("Cheese") == nil)
 	check(
-		"an asset override replaces the design",
-		customBody ~= nil and customBody.Size == Vector3.new(2, 3, 2) and custom:FindFirstChild("Cheese") == nil
+		"the override is resized to the built-in design's height, keeping its proportions",
+		customBody ~= nil
+			and math.abs(customBody.Size.Y - designHeight) < 0.01
+			and math.abs(customBody.Size.X / customBody.Size.Y - 2 / 3) < 0.001
 	)
 	check(
 		"the override stands on the ground, centered, and doesn't collide",
 		customBody ~= nil
-			and math.abs(customBody.CFrame.Position.Y - 1.5) < 0.01
+			and math.abs(customBody.CFrame.Position.Y - designHeight / 2) < 0.01
 			and math.abs(customBody.CFrame.Position.X) < 0.01
 			and not customBody.CanCollide
 	)
+	asset:Destroy()
+
+	-- FacingYaw turns an override: a model long along X ends up long along Z
+	local turned = Instance.new("Model")
+	turned.Name = "TimCheese"
+	turned:SetAttribute("FacingYaw", 90)
+	local plank = Instance.new("Part")
+	plank.Name = "Body"
+	plank.Size = Vector3.new(6, 1, 1)
+	plank.Parent = turned
+	turned.Parent = assets
+	local turnedBody = BrainrotModel.build("TimCheese"):FindFirstChild("Body") :: BasePart
+	local right = turnedBody.CFrame.RightVector
+	check(
+		"FacingYaw turns the override around the vertical axis",
+		math.abs(right.Z) > 0.99 and math.abs(right.X) < 0.01
+	)
+
+	-- Golden variants of textured models go fully gold (textures would hide the colour)
+	local textured = Instance.new("MeshPart")
+	textured.Name = "Body"
+	textured.Size = Vector3.new(2, 2, 2)
+	textured.TextureID = "rbxassetid://1234"
+	turned:ClearAllChildren()
+	turned:SetAttribute("FacingYaw", nil)
+	textured.Parent = turned
+	local golden = BrainrotModel.build("TimCheese", { variant = "Golden" })
+	local goldenBody = golden:FindFirstChild("Body") :: MeshPart
+	check("Golden variants drop mesh textures so the gold shows", goldenBody.TextureID == "")
+	turned:Destroy()
+
+	-- Creator Store models are cleaned before use: no scripts or interactive bits, parts anchored
+	local loaded = Instance.new("Model")
+	local meshBody = Instance.new("Part")
+	meshBody.Name = "Shark"
+	meshBody.Parent = loaded
+	for _, className in { "Script", "LocalScript", "ModuleScript", "Sound", "ClickDetector", "StringValue" } do
+		Instance.new(className).Parent = meshBody
+	end
+	Instance.new("Humanoid").Parent = loaded
+	local prepared = BrainrotAssets.prepare("TralaleroTralala", { loaded })
+	local leftovers = 0
+	for _, descendant in prepared:GetDescendants() do
+		if not descendant:IsA("BasePart") then
+			leftovers += 1
+		end
+	end
+	check("prepared models keep only their parts (scripts, sounds, values, humanoids removed)", leftovers == 0)
+	check(
+		"prepared models are named after the Brainrot and anchored",
+		prepared.Name == "TralaleroTralala" and (prepared:FindFirstChild("Shark", true) :: BasePart).Anchored
+	)
+	check(
+		"prepared models record where they came from",
+		prepared:GetAttribute("AssetId") == string.format("%d", BrainrotAssetIds.TralaleroTralala.assetId)
+	)
+	check("a model with no parts is rejected", BrainrotAssets.prepare("TimCheese", { Instance.new("Model") }) == nil)
+	local unknownIds = {}
+	for brainrotId, entry in BrainrotAssetIds do
+		if not BrainrotData.ById[brainrotId] or type(entry.assetId) ~= "number" then
+			table.insert(unknownIds, brainrotId)
+		end
+	end
+	check("every Creator Store entry is for a real Brainrot", #unknownIds == 0, table.concat(unknownIds, ", "))
 	assets:Destroy()
 end)

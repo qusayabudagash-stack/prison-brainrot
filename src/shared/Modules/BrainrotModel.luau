@@ -5,8 +5,10 @@
 --
 -- Asset override: a Model named after a Brainrot id inside ReplicatedStorage.BrainrotAssets (for
 -- example a MeshPart model you own or got from the Creator Store under a license that allows it) is
--- used instead of the built-in design. Face it towards -Z; it is centered and set on the ground
--- automatically, and a part named "Body" (or its PrimaryPart) gets the rarity effects.
+-- used instead of the built-in design (see BrainrotAssets / BrainrotAssetService). Face it towards
+-- -Z, or set a "FacingYaw" attribute (degrees) to turn it. It is resized to the built-in design's
+-- height, centered and set on the ground automatically, and a part named "Body" (or its
+-- PrimaryPart) gets the rarity effects.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -54,6 +56,15 @@ local function addVariantEffects(model: Model, body: BasePart, variantId: string
 	local isGolden = variantId == "Golden"
 	local color = if isGolden then GOLD else DIAMOND
 	for _, descendant in model:GetDescendants() do
+		-- Textures would hide the colour, so textured models (Creator Store meshes) go fully gold / crystal
+		if descendant:IsA("SurfaceAppearance") then
+			descendant:Destroy()
+			continue
+		elseif descendant:IsA("MeshPart") then
+			descendant.TextureID = ""
+		elseif descendant:IsA("SpecialMesh") then
+			descendant.TextureId = ""
+		end
 		if descendant:IsA("BasePart") and descendant.Transparency < 1 and not descendant:GetAttribute("KeepColor") then
 			descendant.Color = descendant.Color:Lerp(color, if isGolden then 0.85 else 0.8)
 			descendant.Material = if isGolden then Enum.Material.Foil else Enum.Material.Glass
@@ -119,7 +130,9 @@ function BrainrotModel.build(brainrotId: string, options: Options?): Model
 	model.PrimaryPart = root
 
 	local override = BrainrotModel.override(brainrotId)
-	local body = if override then BrainrotModel.useOverride(model, override) else design(kit)
+	local body = if override
+		then BrainrotModel.useOverride(model, override, BrainrotModel.designHeight(brainrotId))
+		else design(kit)
 	body.Name = "Body"
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") and FACE_PARTS[descendant.Name] then
@@ -169,13 +182,11 @@ function BrainrotModel.override(brainrotId: string): Model?
 	return if asset and asset:IsA("Model") then asset else nil
 end
 
--- Copies an override model's parts into `model`, standing on y = 0 and centered, and returns its body.
-function BrainrotModel.useOverride(model: Model, asset: Model): BasePart
-	local copy = asset:Clone()
-	-- World-axis bounds of every part, so the asset is centered and grounded whatever its pivot
+-- World-axis bounds of every part under `root`: (low corner, high corner, parts).
+local function worldBounds(root: Instance): (Vector3, Vector3, { BasePart })
 	local low, high = Vector3.one * math.huge, -Vector3.one * math.huge
 	local parts: { BasePart } = {}
-	for _, descendant in copy:GetDescendants() do
+	for _, descendant in root:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			local cframe, half = descendant.CFrame, descendant.Size / 2
 			local reach = Vector3.new(
@@ -194,6 +205,40 @@ function BrainrotModel.useOverride(model: Model, asset: Model): BasePart
 			table.insert(parts, descendant)
 		end
 	end
+	return low, high, parts
+end
+
+local designHeights: { [string]: number } = {}
+
+-- Height of a Brainrot's built-in design (cached), so replacement models come out the same size.
+function BrainrotModel.designHeight(brainrotId: string): number
+	local cached = designHeights[brainrotId]
+	if cached then
+		return cached
+	end
+	local temp = Instance.new("Model")
+	Designs[brainrotId](Kit.new(temp))
+	local _, top = measure(temp)
+	temp:Destroy()
+	designHeights[brainrotId] = top
+	return top
+end
+
+-- Copies an override model's parts into `model`, turned by its "FacingYaw" attribute, resized to
+-- `targetHeight` (if given), standing on y = 0 and centered, and returns its body.
+function BrainrotModel.useOverride(model: Model, asset: Model, targetHeight: number?): BasePart
+	local copy = asset:Clone()
+	local yaw = asset:GetAttribute("FacingYaw")
+	if type(yaw) == "number" and yaw ~= 0 then
+		copy:PivotTo(copy:GetPivot() * CFrame.Angles(0, math.rad(yaw), 0))
+	end
+	local low, high = worldBounds(copy)
+	local height = high.Y - low.Y
+	if targetHeight and targetHeight > 0 and height > 0 and math.abs(height - targetHeight) > 1e-3 then
+		copy:ScaleTo(copy:GetScale() * targetHeight / height)
+	end
+	local parts
+	low, high, parts = worldBounds(copy)
 	local shift = Vector3.new(-(low.X + high.X) / 2, -low.Y, -(low.Z + high.Z) / 2)
 	for _, part in parts do
 		part.CFrame += shift

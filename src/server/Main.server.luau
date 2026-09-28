@@ -14,9 +14,11 @@ type Service = {
 	start: (() -> ())?,
 }
 
--- Order matters: the map must exist before cells and boards are used, and DataService.start
--- (which begins loading players) runs after every other service has hooked up its listeners.
+-- Order matters: Creator Store models load before anything builds a Brainrot, the map must exist
+-- before cells and boards are used, and DataService.start (which begins loading players) runs
+-- after every other service has hooked up its listeners.
 local services: { Service } = {
+	require(Services.BrainrotAssetService) :: any,
 	require(Services.MapService) :: any,
 	require(Services.DataService) :: any,
 	require(Services.AnnouncementService) :: any,

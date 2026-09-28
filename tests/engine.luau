@@ -408,7 +408,23 @@ local function installOnce()
 		if primary then
 			return primary.CFrame * primary.PivotOffset
 		end
-		return self.WorldPivot
+		local ok, pivot = pcall(function()
+			return self.WorldPivot
+		end)
+		if ok then
+			return pivot
+		end
+		-- A fresh model has no stored pivot yet; Roblox uses the centre of its parts
+		local low, high, any = nil, nil, false
+		for _, descendant in self:GetDescendants() do
+			if descendant:IsA("BasePart") then
+				local p = descendant.CFrame.Position
+				low = if low then low:Min(p) else p
+				high = if high then high:Max(p) else p
+				any = true
+			end
+		end
+		return if any then roblox.CFrame.new((low + high) / 2) else roblox.CFrame.new()
 	end)
 	roblox.implementMethod("Model", "PivotTo", function(self, target)
 		local delta = target * self:GetPivot():Inverse()
@@ -421,7 +437,14 @@ local function installOnce()
 			self.WorldPivot = target
 		end
 	end)
-	roblox.implementMethod("Model", "ScaleTo", function(self, scale)
+	-- Like Roblox, ScaleTo sets an absolute scale relative to the model's original size
+	local modelScales = setmetatable({}, { __mode = "k" })
+	roblox.implementMethod("Model", "GetScale", function(self)
+		return modelScales[self] or 1
+	end)
+	roblox.implementMethod("Model", "ScaleTo", function(self, target)
+		local scale = target / (modelScales[self] or 1)
+		modelScales[self] = target
 		local pivot = self:GetPivot()
 		local primary = self.PrimaryPart
 		for _, descendant in self:GetDescendants() do
@@ -435,6 +458,17 @@ local function installOnce()
 			local offset = primary.PivotOffset
 			primary.PivotOffset = offset.Rotation + offset.Position * scale
 		end
+	end)
+
+	-- Creator Store models: tests register builders in engine.assets[assetId]; anything else fails
+	roblox.implementMethod("InsertService", "LoadAsset", function(_self, assetId)
+		local make = current.assets[assetId]
+		if not make then
+			error(`asset {assetId} is not available in tests`)
+		end
+		local container = roblox.Instance.new("Model")
+		make().Parent = container
+		return container
 	end)
 end
 
@@ -483,6 +517,7 @@ function Engine.new(placeData: string, options: { studio: boolean?, side: string
 	self.baseClock = os.clock()
 	self.timeOffset = 0
 	self.watched = {}
+	self.assets = {}
 
 	task.spawn(function()
 		while current == self do
