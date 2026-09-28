@@ -100,7 +100,9 @@ T.run(function()
 		end
 	end
 	print(`  (map has {parts} parts)`)
-	check("map stays lightweight (< 2500 parts)", parts < 2500, parts)
+	-- A furnished prison (cells, props, six machines) is a few thousand anchored parts; keep it well under
+	-- what mobile devices handle comfortably.
+	check("map stays within its part budget (< 7000 parts)", parts < 7000, parts)
 	check("a Roll prompt on every machine", actions.Roll == 6, actions.Roll)
 	check("an Unlock prompt on every gate", actions.Unlock == 5, actions.Unlock)
 	for _, action in { "Shop", "Upgrades", "Book", "Rebirth", "FreeBoost", "DailyRoll" } do
@@ -354,9 +356,16 @@ T.run(function()
 	check("can't buy it twice", engine:invoke(alice, "BuyCosmetic", "Bed").ok == false)
 	task.wait(0.5)
 	check("bed appears in the cell", cellOf(alice).Decor:FindFirstChild("Bed") ~= nil)
+	local function hidden(name: string): boolean
+		local furniture = cellOf(alice):FindFirstChild(name)
+		local part = furniture and furniture:FindFirstChildWhichIsA("BasePart", true)
+		return part ~= nil and part.Transparency == 1
+	end
+	check("the comfy bed replaces the steel bunk", hidden("Bunk"))
 	check("hide the bed", engine:invoke(alice, "ToggleCosmetic", "Bed").ok == true and data.cosmetics.Bed == false)
 	task.wait(0.5)
 	check("bed disappears", cellOf(alice).Decor:FindFirstChild("Bed") == nil)
+	check("the steel bunk comes back", not hidden("Bunk"))
 	for _, cosmetic in CosmeticData.Cosmetics do
 		if data.cosmetics[cosmetic.id] == nil then
 			engine:invoke(alice, "BuyCosmetic", cosmetic.id)
@@ -364,10 +373,11 @@ T.run(function()
 	end
 	task.wait(0.5)
 	check(
-		"every other cosmetic builds in the cell",
-		#cellOf(alice).Decor:GetChildren() == #CosmeticData.Cosmetics - 1,
+		"every other cosmetic builds in the cell (the golden toilet wins over the porcelain one)",
+		#cellOf(alice).Decor:GetChildren() == #CosmeticData.Cosmetics - 2,
 		#cellOf(alice).Decor:GetChildren()
 	)
+	check("the golden toilet replaces the steel one", hidden("Toilet"))
 	check("cell shows the 3 best Brainrots", #cellOf(alice).Displays:GetChildren() == 3)
 
 	---------------------------------------------------------------------------
